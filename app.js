@@ -1,9 +1,10 @@
 const express = require('express');
 const app = express();
-const port = 3015;
 const middleware = require('./middleware');
 const path = require('path');
 const session = require('express-session');
+require('dotenv').config();
+const port = process.env.port;
 
 
 
