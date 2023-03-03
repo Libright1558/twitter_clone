@@ -25,7 +25,8 @@ submitPostButton.addEventListener("click", () => {
         })
         .then(result => {
             var html = createPostHtml(result);
-            document.querySelector('.postsContainer').prepend(html);
+            const postsContainer = document.querySelector('.postsContainer');
+            postsContainer.insertAdjacentHTML("afterbegin", html);
         })
         .catch(error => {
             console.log(error);
@@ -41,5 +42,20 @@ submitPostButton.addEventListener("click", () => {
 });
 
 function createPostHtml(result) {
-    return result.data[1];   
+    return `<div class='post'>
+                <div class='mainContentContainer'>
+                    <div class='userImageContainer'>
+                        <img src='${result.profilePic}'>
+                    </div>
+                    <div class='postContentContainer'>
+                        <div class='header'>
+                        </div>
+                        <div class='postBody'>
+                            <span>${result.data[1]}</span>
+                        </div>
+                        <div class='postFooter'>
+                        </div>
+                    </div>
+                </div>
+            </div>`;   
 };
