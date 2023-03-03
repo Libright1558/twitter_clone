@@ -18,10 +18,15 @@ router.post("/", express.json(), (req, res, next) => {
         return res.sendStatus(400);
     }
     req.body.content = req.body.content.replace(/[\u00A0-\u9999<>\&]/gim, (i) => `&#${i.charCodeAt(0)};`);// HTML escape
-    //var postData = [req.session.user.username, req.body.content, false];
-    //controller.postData(postData);
-
-    res.status(200).send(JSON.stringify(req.body.content));
+    var postData = [req.session.user.username, req.body.content, false];
+    controller.postData(postData)
+    .then(() => {
+        res.status(201).send(JSON.stringify({"data": postData}));
+    })
+    .catch(error => {
+        console.log(error);
+        res.sendStatus(400);
+    });
 })
 
 module.exports = router;

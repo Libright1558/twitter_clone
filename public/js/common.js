@@ -7,23 +7,39 @@ Textarea.addEventListener("input", () => {
 });
 
 //post texts in textarea
-submitPostButton.addEventListener("click", async () => {
+submitPostButton.addEventListener("click", () => {
     try {
         const value = Textarea.value.trim();
         var postText = {
             "content": value
         }
-        const response = await fetch("/api/posts", {
+        fetch("/api/posts", {
             body: JSON.stringify(postText),
             method: 'POST',
             headers: {
                 "Content-Type": "application/json"
             }
         })
-        const data = await response.json();
-        console.log(data);
+        .then(response => {
+            return response.json();
+        })
+        .then(result => {
+            var html = createPostHtml(result);
+            document.querySelector('.postsContainer').prepend(html);
+        })
+        .catch(error => {
+            console.log(error);
+        })
+        .finally(() => {
+            document.getElementById("postTextarea").value = "";
+            document.getElementById("submitPostButton").disabled = true;
+        });
     }
     catch(e) {
         console.log("Content param can not send with request", e);
     }
 });
+
+function createPostHtml(result) {
+    return result.data[1];   
+};
