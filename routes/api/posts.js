@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const router = express.Router();
 const controller = require("../../controller");
+const moment = require('moment');
 
 
 app.use(express.urlencoded({extended: false}));
@@ -18,13 +19,19 @@ router.post("/", express.json(), (req, res, next) => {
         return res.sendStatus(400);
     }
     req.body.content = req.body.content.replace(/[\u00A0-\u9999<>\&]/gim, (i) => `&#${i.codePointAt(0)};`);// HTML escape
-    var postData = [req.session.user.username, req.body.content, false];
+    const time = moment().local().format('YYYY-MM-DD HH:mm:ss');
+    const postData = [req.session.user.username, req.body.content, false, time];
     controller.postData(postData)
     .then(() => {
-        let username = req.session.user.username;
-        let email = req.session.user.email;
-        let profilePic = req.session.user.profilePic;
-        let deliver = {"data": postData, "username": username, "email": email, "profilePic": profilePic};
+        const username = req.session.user.username;
+        const email = req.session.user.email;
+        const profilePic = req.session.user.profilePic;
+        const firstName = req.session.user.firstName;
+        const lastName = req.session.user.lastName;
+
+        const deliver = {"data": postData, "username": username, 
+                        "email": email, "profilePic": profilePic, 
+                        "firstName": firstName, "lastName": lastName, "timestamp": time};
 
         res.status(201).send(JSON.stringify(deliver));
     })

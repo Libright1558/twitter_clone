@@ -33,8 +33,8 @@ router.post("/", async (req, res, next) => {
 
             if(result === true) {
                 req.session.user = {
-                    'firstName': user.rows[0].firstName,
-                    'lastName': user.rows[0].lastName,
+                    'firstName': user.rows[0].firstname,
+                    'lastName': user.rows[0].lastname,
                     'username': user.rows[0].username,
                     'email': user.rows[0].email,
                     'profilePic': user.rows[0].profilepic,
