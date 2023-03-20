@@ -53,7 +53,7 @@ function createPostHtml(result) {
                     </div>
                     <div class='postContentContainer'>
                         <div class='header'>
-                            <a href=''>${fullName}</a>
+                            <a href='' class='displayName'>${fullName}</a>
                             <span class='username'>@${result.username}</span>
                             <span class='date'>${timestamp}</span>
                         </div>
@@ -61,6 +61,21 @@ function createPostHtml(result) {
                             <span>${result.data[1]}</span>
                         </div>
                         <div class='postFooter'>
+                            <div class='postButtonContainer'>
+                                <button>
+                                <i class="fa-regular fa-comment"></i> <!-- This is an icon -->
+                                </button>
+                            </div>
+                            <div class='postButtonContainer'>
+                                <button>
+                                <i class="fa-solid fa-retweet"></i> <!-- This is an icon -->
+                                </button>
+                            </div>
+                            <div class='postButtonContainer'>
+                                <button>
+                                <i class="fa-regular fa-heart"></i> <!-- This is an icon -->
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
