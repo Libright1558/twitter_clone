@@ -1,6 +1,7 @@
 const redis = require('redis');
 const client = redis.createClient();
 const controller = require("../controller.js");
+const moment = require('moment');
 
 client.on('error', err => console.log('Redis Client Error', err));
 
@@ -12,6 +13,7 @@ const getPost = async (username) => {
         if(!postRecords.length) {
             const userPosts = await controller.fetchPost(username);
             userPosts.rows.forEach(async (row) => {
+                row.ts = moment(row.ts).format("YYYY-MM-DD HH:mm:ss");
                 await client.rPush(username, JSON.stringify(row));
             });
             postRecords = await client.LRANGE(username, 0, -1);
