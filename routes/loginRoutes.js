@@ -3,6 +3,7 @@ const app = express();
 const router = express.Router();
 const controller = require("../controller");
 const bcrypt = require('bcrypt');
+const redis_cache = require("../redis/cache");
 
 app.set("view engine", "pug");
 app.set("views", "views");
@@ -24,7 +25,7 @@ router.post("/", async (req, res, next) => {
         catch(e) {
             console.log(e);
             payload.errorMessage = "Something went worng.";
-            res.status(200).render("login", payload);
+            return res.status(200).render("login", payload);
         }
 
         if(user.rows[0] != null) {
@@ -39,6 +40,7 @@ router.post("/", async (req, res, next) => {
                     'email': user.rows[0].email,
                     'profilePic': user.rows[0].profilepic,
                 };
+                await redis_cache.rmExp(req.session.user.username);
                 return res.redirect("/");
             }
             payload.errorMessage = "Login credentials incorrect.";
