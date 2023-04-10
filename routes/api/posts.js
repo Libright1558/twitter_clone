@@ -12,7 +12,19 @@ app.use(express.urlencoded({extended: false}));
 router.get("/", async (req, res, next) => {
     try {
         const username = req.session.user.username;
+        const email = req.session.user.email;
+        const profilePic = req.session.user.profilePic;
+        const firstName = req.session.user.firstName;
+        const lastName = req.session.user.lastName;
+
+        const userInfo = {
+            "username": username, 
+            "email": email, "profilePic": profilePic, 
+            "firstName": firstName, "lastName": lastName,
+        }
+
         const userPosts = await redis_cache.getPost(username);
+        userPosts.push(userInfo);
         res.status(200).send(JSON.stringify(userPosts));
     }
     catch(err) {
@@ -30,14 +42,24 @@ router.post("/", express.json(), (req, res, next) => {
     const time = moment().local().format('YYYY-MM-DD HH:mm:ss');
     const postData = [req.session.user.username, req.body.content, false, time];
     controller.postData(postData)
-    .then(() => {
+    .then(async () => {
         const username = req.session.user.username;
         const email = req.session.user.email;
         const profilePic = req.session.user.profilePic;
         const firstName = req.session.user.firstName;
         const lastName = req.session.user.lastName;
+        const content = req.body.content;
 
-        const deliver = {"data": postData, "username": username, 
+        const newPost = {
+            "content": content,
+            "pinned": false,
+            "postby": username,
+            "ts": time,
+        }
+
+        await redis_cache.addPost(username, newPost);
+
+        const deliver = {"postData": content, "username": username, 
                         "email": email, "profilePic": profilePic, 
                         "firstName": firstName, "lastName": lastName, "timestamp": time};
 
