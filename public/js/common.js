@@ -44,7 +44,6 @@ submitPostButton.addEventListener("click", () => {
 function createPostHtml(result) {
 
     let fullName = result.firstName + " " + result.lastName;
-    let timestamp = result.timestamp;
 
     return `<div class='post'>
                 <div class='mainContentContainer'>
@@ -55,10 +54,10 @@ function createPostHtml(result) {
                         <div class='header'>
                             <a href='' class='displayName'>${fullName}</a>
                             <span class='username'>@${result.username}</span>
-                            <span class='date'>${timestamp}</span>
+                            <span class='date'>${result.timestamp}</span>
                         </div>
                         <div class='postBody'>
-                            <span>${result.data[1]}</span>
+                            <span>${result.postData}</span>
                         </div>
                         <div class='postFooter'>
                             <div class='postButtonContainer'>
