@@ -41,6 +41,13 @@ submitPostButton.addEventListener("click", () => {
     }
 });
 
+
+
+//like button click handler
+function likeButtonClickHandler() {
+    console.log("like button clicked");
+}
+
 function createPostHtml(result) {
 
     let fullName = result.firstName + " " + result.lastName;
@@ -71,7 +78,7 @@ function createPostHtml(result) {
                                 </button>
                             </div>
                             <div class='postButtonContainer'>
-                                <button>
+                                <button onclick="likeButtonClickHandler()">
                                 <i class="fa-regular fa-heart"></i> <!-- This is an icon -->
                                 </button>
                             </div>
