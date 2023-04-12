@@ -61,10 +61,23 @@ const fetchPost = async (username) => {
     }
 }
 
+const newPostId = async (username) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.newPostId, [username]);
+        client.release();
+        return result;
+    }
+    catch(err) {
+        console.log("database error", err);
+    }
+}
+
 module.exports = {
     regist,
     findDup,
     findOne,
     postData,
     fetchPost,
+    newPostId,
 };
