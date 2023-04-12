@@ -12,6 +12,7 @@ const getPost = async (username) => {
         let postRecords = await client.LRANGE(username, 0, -1);
         if(!postRecords.length) {
             const userPosts = await controller.fetchPost(username);
+
             userPosts.rows.forEach(async (row) => {
                 row.ts = moment(row.ts).format("YYYY-MM-DD HH:mm:ss");
                 await client.rPush(username, JSON.stringify(row));
