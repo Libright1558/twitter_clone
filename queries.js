@@ -3,6 +3,7 @@ const findDup = 'SELECT username, email FROM user_records WHERE username = $1 OR
 const findOne = 'SELECT * FROM user_records WHERE username = $1 OR email = $1';
 const postData = 'INSERT INTO post_records(postby, content, pinned, ts) VALUES($1, $2, $3, $4)';
 const fetchPost = 'SELECT * FROM post_records WHERE postby = $1 ORDER BY ts DESC';
+const newPostId = 'SELECT post_id FROM post_records WHERE postby = $1 ORDER BY ts DESC LIMIT 1';
 
 module.exports = {
     regist,
@@ -10,4 +11,5 @@ module.exports = {
     findOne,
     postData,
     fetchPost,
+    newPostId,
 };
