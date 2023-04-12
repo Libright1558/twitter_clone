@@ -50,18 +50,28 @@ router.post("/", express.json(), (req, res, next) => {
         const lastName = req.session.user.lastName;
         const content = req.body.content;
 
+        const postId = await controller.newPostId(username);
+
         const newPost = {
             "content": content,
             "pinned": false,
             "postby": username,
             "ts": time,
+            "post_id": postId.rows[0].post_id,
         }
 
         await redis_cache.addPost(username, newPost);
 
-        const deliver = {"postData": content, "username": username, 
-                        "email": email, "profilePic": profilePic, 
-                        "firstName": firstName, "lastName": lastName, "timestamp": time};
+        const deliver = {
+            "postData": content, 
+            "username": username, 
+            "email": email, 
+            "profilePic": profilePic, 
+            "firstName": firstName, 
+            "lastName": lastName, 
+            "timestamp": time,
+            "post_id": postId,
+        };
 
         res.status(201).send(JSON.stringify(deliver));
     })
