@@ -42,17 +42,34 @@ submitPostButton.addEventListener("click", () => {
 });
 
 
-
 //like button click handler
-function likeButtonClickHandler() {
-    console.log("like button clicked");
+const postsContainer = document.querySelector('.postsContainer');
+
+postsContainer.addEventListener("click", function(e) {
+
+    const target = e.target.closest(".likeButton");
+
+    if(target) {
+        let postId = getPostIdFromElement(target);
+        console.log(postId);
+    }
+    
+}, false);
+
+
+function getPostIdFromElement(element) {
+    let isRoot = element.classList.contains('post');
+    let rootElement = isRoot === true ? element : element.closest('.post');
+    let postId = rootElement.dataset.id;
+
+    return postId;
 }
 
 function createPostHtml(result) {
 
     let fullName = result.firstName + " " + result.lastName;
 
-    return `<div class='post'>
+    return `<div class='post' data-id='${result.post_id}'>
                 <div class='mainContentContainer'>
                     <div class='userImageContainer'>
                         <img src='${result.profilePic}'>
@@ -78,7 +95,7 @@ function createPostHtml(result) {
                                 </button>
                             </div>
                             <div class='postButtonContainer'>
-                                <button onclick="likeButtonClickHandler()">
+                                <button class='likeButton'>
                                 <i class="fa-regular fa-heart"></i> <!-- This is an icon -->
                                 </button>
                             </div>
