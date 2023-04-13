@@ -1,20 +1,64 @@
 const pool = require("./database");
 const queries = require("./queries");
 
-const regist = (param) => {
-    return pool.query(queries.regist, param);   
+const regist = async (param) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.regist, param);
+        client.release();
+        return result;
+    }
+    catch(err) {
+        console.log("database error", err);
+    }
 }
 
-const findDup = (username, email) => {
-    return pool.query(queries.findDup, [username, email]);
+const findDup = async (username, email) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.findDup, [username, email]);
+        client.release();
+        return result;
+    }
+    catch(err) {
+        console.log("database error", err);
+    }
 }
 
-const findOne = (username_or_email) => {
-    return pool.query(queries.findOne, [username_or_email]);
+const findOne = async (username_or_email) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.findOne, [username_or_email]);
+        client.release();
+        return result;
+    }
+    catch(err) {
+        console.log("database error", err);
+    }
 }
 
-const postData = (postData) => {
-    return pool.query(queries.postData, postData);
+const postData = async (postData) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.postData, postData);
+        client.release();
+        return result;
+    }
+    catch(err) {
+        console.log("database error", err);
+    }
+}
+
+const fetchPost = async (username) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.fetchPost, [username]);
+        client.release();
+        return result;
+    }
+    catch(err) {
+        console.log("database error", err);
+    }
 }
 
 module.exports = {
@@ -22,4 +66,5 @@ module.exports = {
     findDup,
     findOne,
     postData,
+    fetchPost,
 };
