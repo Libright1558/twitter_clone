@@ -3,13 +3,21 @@ const app = express();
 const router = express.Router();
 const controller = require("../../controller");
 const moment = require('moment');
+const redis_cache = require("../../redis/cache.js");
 
 
 app.use(express.urlencoded({extended: false}));
 
 
-router.get("/", (req, res, next) => {
-    
+router.get("/", async (req, res, next) => {
+    try {
+        const username = req.session.user.username;
+        const userPosts = await redis_cache.getPost(username);
+        res.status(200).send(JSON.stringify(userPosts));
+    }
+    catch(err) {
+        console.log("getPost error", err);
+    }
 })
 
 router.post("/", express.json(), (req, res, next) => {
