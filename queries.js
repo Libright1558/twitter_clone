@@ -11,6 +11,7 @@ const newPostId = 'SELECT post_id FROM post_records WHERE postby = $1 ORDER BY t
 //post_like
 const userLike = 'INSERT INTO user_likes(username, post_id, like_ts) VALUES($1, $2, $3)';
 const postLike = 'INSERT INTO post_records(likes) VALUES(ARRAY[$1])';
+const fetchUserLike = 'SELECT * FROM user_likes WHERE username = $1';
 
 module.exports = {
     regist,
@@ -21,4 +22,5 @@ module.exports = {
     newPostId,
     userLike,
     postLike,
+    fetchUserLike,
 };
