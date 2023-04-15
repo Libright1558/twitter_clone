@@ -101,6 +101,18 @@ const postLike = async (postlike) => {
     }
 }
 
+const fetchUserLike = async (username) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.fetchUserLike, [username]);
+        client.release();
+        return result;
+    }
+    catch(err) {
+        console.log("database error", err);
+    }
+}
+
 module.exports = {
     regist,
     findDup,
@@ -110,4 +122,5 @@ module.exports = {
     newPostId,
     userLike,
     postLike,
+    fetchUserLike,
 };
