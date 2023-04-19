@@ -76,8 +76,8 @@ const newPostId = async (username) => {
     }
 }
 
-//post_like
-const userLike = async (userlike) => {
+//user_like
+const insertUserLike = async (userlike) => {
     try {
         const client = await pool.connect();
         const result = await client.query(queries.userLike, [userlike]);
@@ -89,10 +89,11 @@ const userLike = async (userlike) => {
     }
 }
 
-const postLike = async (postlike) => {
+
+const fetchUserLike = async (username) => {
     try {
         const client = await pool.connect();
-        const result = await client.query(queries.postLike, [postlike]);
+        const result = await client.query(queries.fetchUserLike, [username]);
         client.release();
         return result;
     }
@@ -101,10 +102,11 @@ const postLike = async (postlike) => {
     }
 }
 
-const fetchUserLike = async (username) => {
+//post_like
+const insertPostLike = async (postlike) => {
     try {
         const client = await pool.connect();
-        const result = await client.query(queries.fetchUserLike, [username]);
+        const result = await client.query(queries.postLike, [postlike]);
         client.release();
         return result;
     }
@@ -120,7 +122,7 @@ module.exports = {
     postData,
     fetchPost,
     newPostId,
-    userLike,
-    postLike,
+    insertUserLike,
     fetchUserLike,
+    insertPostLike,
 };
