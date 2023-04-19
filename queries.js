@@ -8,10 +8,12 @@ const postData = 'INSERT INTO post_records(postby, content, pinned, ts) VALUES($
 const fetchPost = 'SELECT * FROM post_records WHERE postby = $1 ORDER BY ts DESC';
 const newPostId = 'SELECT post_id FROM post_records WHERE postby = $1 ORDER BY ts DESC LIMIT 1';
 
-//post_like
+//user_like
 const userLike = 'INSERT INTO user_likes(username, post_id, like_ts) VALUES($1, $2, $3)';
+const fetchUserLike = 'SELECT * FROM user_likes WHERE username = $1 ORDER BY like_ts DESC';
+
+//post_like
 const postLike = 'INSERT INTO post_records(likes) VALUES(ARRAY[$1])';
-const fetchUserLike = 'SELECT * FROM user_likes WHERE username = $1';
 
 module.exports = {
     regist,
@@ -21,6 +23,6 @@ module.exports = {
     fetchPost,
     newPostId,
     userLike,
-    postLike,
     fetchUserLike,
+    postLike,
 };
