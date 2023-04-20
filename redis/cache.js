@@ -13,11 +13,14 @@ const getPost = async (username) => {
         let postRecords = await client.ZRANGE(username + "_post", 0, -1);
         if(!postRecords.length) {
             const userPosts = await controller.fetchPost(username);
+            await client.DEL(username + "_post_hashTable");
 
             let count = 0;
             userPosts.rows.forEach(async (row) => {
                 row.ts = moment(row.ts).format("YYYY-MM-DD HH:mm:ss");
-                await client.ZADD(username + "_post", {score: count++, value: JSON.stringify(row)});
+                let obj = {score: count++, value: JSON.stringify(row)};
+                await client.ZADD(username + "_post", obj);
+                await client.hSet(username + "_post_hashTable", row.post_id, obj.score);
             });
             postRecords = await client.ZRANGE(username + "_post", 0, -1);
         }// if redis cache is empty, load data from database
@@ -45,7 +48,10 @@ const addPost = async (username, post) => {
             first = score - 1;
         }
         
-        await client.ZADD(username + "_post", {score: first, value: JSON.stringify(post)});
+        let obj = {score: first, value: JSON.stringify(post)};
+
+        await client.ZADD(username + "_post", obj);
+        await client.hSet(username + "_post_hashTable", post.post_id, obj.score);
 
         await client.quit();
     }
@@ -57,7 +63,7 @@ const addPost = async (username, post) => {
 }
 
 
-//post expire
+//remove expire and set expire
 const setExp = async (key, times) => {
     try {
         await client.connect();
@@ -88,6 +94,16 @@ const rmExp = async (key) => {
     }
 }
 
+const setExpAll = async (key, times) => {
+    await setExp(key + "_post", times);
+    await setExp(key + "_post_hashTable", times);
+}
+
+const rmExpAll = async (key) => {
+    await rmExp(key + "_post_hashTable");
+    await rmExp(key + "_post");
+}
+
 
 //user_like
 const loadUserLike = async (username) => {
@@ -100,7 +116,9 @@ const loadUserLike = async (username) => {
 
             let count = 0;
             like.rows.forEach(async (row) => {
-                await client.ZADD(username + "_like", {score: count++, value: JSON.stringify(row)});
+                let obj = {score: count++, value: JSON.stringify(row)};
+                await client.ZADD(username + "_like", obj);
+                await client.hSet(username + "_like_hashTable", row.post_id, obj.score);
             });
             userLike = client.ZRANGE(username + "_like", 0, -1);
         }// if redis cache is empty, load user_like from database
@@ -128,8 +146,11 @@ const addUserLike = async (username, post) => {
             let score = await client.zScore(username + "_post", member.toString());
             first = score - 1;
         }
+
+        let obj = {score: first, value: JSON.stringify(post)}; 
         
-        await client.ZADD(username + "_like", {score: first, value: JSON.stringify(post)});
+        await client.ZADD(username + "_like", obj);
+        await client.hSet(username + "_like_hashTable", post.post_id, obj.score);
 
         await client.quit();
     }
@@ -148,6 +169,8 @@ module.exports = {
     addPost,
     setExp,
     rmExp,
+    setExpAll,
+    rmExpAll,
     loadUserLike,
     addUserLike,
 };
