@@ -113,6 +113,7 @@ const loadUserLike = async (username) => {
         let userLike = client.ZRANGE(username + "_like", 0, -1);
         if(!userLike.length) {
             const like = await controller.fetchUserLike(username);
+            await client.DEL(username + "_like_hashTable");
 
             let count = 0;
             like.rows.forEach(async (row) => {
@@ -143,7 +144,7 @@ const addUserLike = async (username, post) => {
         let first = 0;
 
         if(member.length) {
-            let score = await client.zScore(username + "_post", member.toString());
+            let score = await client.zScore(username + "_like", member.toString());
             first = score - 1;
         }
 
