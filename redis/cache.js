@@ -110,7 +110,7 @@ const loadUserLike = async (username) => {
     try {
         await client.connect();
         
-        let userLike = client.ZRANGE(username + "_like", 0, -1);
+        let userLike = await client.ZRANGE(username + "_like", 0, -1);
         if(!userLike.length) {
             const like = await controller.fetchUserLike(username);
             await client.DEL(username + "_like_hashTable");
@@ -163,7 +163,35 @@ const addUserLike = async (username, post) => {
 }
 
 //post_like
+const postLike = async (username, postId, alreadyLike) => {
+    try {
+        await client.connect();
 
+        const targetScore = await client.hGet(username + "_post_hashTable", postId);
+        const targetNode = await client.ZRANGE(username + "_post", targetScore, targetScore, 'BYSCORE');
+        let result = JSON.parse(targetNode);
+        let total_likes;
+        if(alreadyLike === false) {
+            total_likes = Number(result.like_nums) + 1;
+        }
+        else {
+            total_likes = Number(result.like_nums) - 1;
+        }
+        result.like_nums = total_likes.toString();
+        const SCore = Number(targetScore);
+        const obj = {score: SCore, value: JSON.stringify(result)};
+
+        await client.zRemRangeByScore(username + "_post", targetScore, targetScore);
+        await client.ZADD(username + "_post", obj);
+
+        await client.quit();
+    }
+    catch(err) {
+        await client.quit();
+        console.log("redis postLike error", err);
+        return;
+    }
+}
 
 module.exports = {
     getPost,
@@ -174,4 +202,5 @@ module.exports = {
     rmExpAll,
     loadUserLike,
     addUserLike,
+    postLike,
 };
