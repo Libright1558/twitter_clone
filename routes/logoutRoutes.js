@@ -9,7 +9,7 @@ router.get("/", (req, res, next) => {
         const username = req.session.user.username;
         req.session.destroy(() => {
             res.redirect("/login");
-            redis_cache.setExp(username, process.env.exp_time);
+            redis_cache.setExpAll(username, process.env.exp_time);
         })
     }
 })
