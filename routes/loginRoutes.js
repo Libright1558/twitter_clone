@@ -40,7 +40,7 @@ router.post("/", async (req, res, next) => {
                     'email': user.rows[0].email,
                     'profilePic': user.rows[0].profilepic,
                 };
-                await redis_cache.rmExp(req.session.user.username);
+                await redis_cache.rmExpAll(req.session.user.username);
                 return res.redirect("/");
             }
             payload.errorMessage = "Login credentials incorrect.";
