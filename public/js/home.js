@@ -19,12 +19,16 @@ document.addEventListener("DOMContentLoaded", () => {
             "timestamp": null,
             "postData": null,
             "post_id": null,
+            "like_nums": null,
+            "retweet_nums": null,
         }
 
         results.slice(0, len - 1).forEach(result => {
             resultPost.timestamp = result.ts;
             resultPost.postData = result.content;
             resultPost.post_id = result.post_id;
+            resultPost.like_nums = Number(result.like_nums);
+            resultPost.retweet_nums = Number(result.retweet_nums);
 
             let html = createPostHtml(resultPost);
             postsContainer.insertAdjacentHTML("beforeend", html);
