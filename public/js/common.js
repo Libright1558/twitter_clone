@@ -10,7 +10,7 @@ Textarea.addEventListener("input", () => {
 submitPostButton.addEventListener("click", () => {
     try {
         const value = Textarea.value.trim();
-        var postText = {
+        let postText = {
             "content": value
         }
         fetch("/api/posts", {
@@ -51,7 +51,32 @@ postsContainer.addEventListener("click", function(e) {
 
     if(target) {
         let postId = getPostIdFromElement(target);
-        console.log(postId);
+        if(postId !== undefined) {
+
+            const postContentContainer = e.target.closest(".postContentContainer");
+            const username = postContentContainer.querySelector('.username').innerHTML;
+            const usernameMinusAT = username.slice(1);
+
+            let updateLike = {
+                "postId": postId,
+                "postOwner": usernameMinusAT,
+            }
+
+            fetch(`api/posts/${postId}/like`, {
+                method: "PUT",
+                body: JSON.stringify(updateLike),
+                headers: {
+                    "Content-Type": "application/json"
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((result) => {
+                let num = target.querySelector('.likeNums');
+                num.innerHTML = result || "";
+            })
+        }
     }
     
 }, false);
@@ -97,6 +122,7 @@ function createPostHtml(result) {
                             <div class='postButtonContainer'>
                                 <button class='likeButton'>
                                 <i class="fa-regular fa-heart"></i> <!-- This is an icon -->
+                                <span class='likeNums'>${result.like_nums || ""}</span>
                                 </button>
                             </div>
                         </div>
