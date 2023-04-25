@@ -24,7 +24,7 @@ const getPost = async (username) => {
             });
             postRecords = await client.ZRANGE(username + "_post", 0, -1);
         }// if redis cache is empty, load data from database
-        
+
         const recordsObj = postRecords.map(str => JSON.parse(str));
         await client.quit();
         return recordsObj;
@@ -105,6 +105,23 @@ const rmExpAll = async (key) => {
 }
 
 
+//ket exist
+const isKeyExist = async (key) => {
+    try {
+        await client.connect();
+
+        const isExist = await client.KEYS(key);
+
+        await client.quit();
+        return !isExist.length ? false : true;
+    }
+    catch(err) {
+        await client.quit();
+        console.log("redis isKeyExist error", err);
+        return;
+    }
+}
+
 //user_like
 const loadUserLike = async (username) => {
     try {
@@ -121,7 +138,7 @@ const loadUserLike = async (username) => {
                 await client.ZADD(username + "_like", obj);
                 await client.hSet(username + "_like_hashTable", row.post_id, obj.score);
             });
-            userLike = client.ZRANGE(username + "_like", 0, -1);
+            userLike = await client.ZRANGE(username + "_like", 0, -1);
         }// if redis cache is empty, load user_like from database
 
         const result = userLike.map(str => JSON.parse(str));
@@ -136,7 +153,7 @@ const loadUserLike = async (username) => {
 }
 
 
-const addUserLike = async (username, post) => {
+const addUserLike = async (username, postOwner, postId) => {
     try {
         await client.connect();
 
@@ -147,6 +164,9 @@ const addUserLike = async (username, post) => {
             let score = await client.zScore(username + "_like", member.toString());
             first = score - 1;
         }
+        const targetScore = await client.hGet(postOwner + "_post_hashTable", postId);
+        const targetNode = await client.ZRANGE(postOwner + "_post", targetScore, targetScore, 'BYSCORE');
+        let post = JSON.parse(targetNode);
 
         let obj = {score: first, value: JSON.stringify(post)}; 
         
@@ -162,13 +182,53 @@ const addUserLike = async (username, post) => {
     }
 }
 
-//post_like
-const postLike = async (username, postId, alreadyLike) => {
+const delUserLike = async (username, postId) => {
     try {
         await client.connect();
 
-        const targetScore = await client.hGet(username + "_post_hashTable", postId);
-        const targetNode = await client.ZRANGE(username + "_post", targetScore, targetScore, 'BYSCORE');
+        const targetScore = await client.hGet(username + "_like_hashTable", postId);
+        await client.zRemRangeByScore(username + "_like", targetScore, targetScore);
+        await client.hDel(username + "_like_hashTable", postId);
+
+        await client.quit();
+    }
+    catch(err) {
+        await client.quit();
+        console.log("redis delUserLike error", err);
+        return;
+    }
+}
+
+const isAlreadyLike = async (username, postId) => {
+    try {
+        await client.connect();
+
+        const targetScore = await client.hGet(username + "_like_hashTable", postId);
+        let result;
+        if(targetScore === undefined || targetScore === null) {
+            result = false;
+        }
+        else {
+            result = true;
+        }
+
+        await client.quit();
+        return result;
+    }
+    catch(err) {
+        await client.quit();
+        console.log("redis isAlreadyLike error", err);
+        return;
+    }
+}
+
+//post_like
+const postLike = async (postOwner, postId, alreadyLike) => {
+    try {
+        await client.connect();
+
+        const targetScore = await client.hGet(postOwner + "_post_hashTable", postId);
+        const targetNode = await client.ZRANGE(postOwner + "_post", targetScore, targetScore, 'BYSCORE');
         let result = JSON.parse(targetNode);
         let total_likes;
         if(alreadyLike === false) {
@@ -181,10 +241,11 @@ const postLike = async (username, postId, alreadyLike) => {
         const SCore = Number(targetScore);
         const obj = {score: SCore, value: JSON.stringify(result)};
 
-        await client.zRemRangeByScore(username + "_post", targetScore, targetScore);
-        await client.ZADD(username + "_post", obj);
+        await client.zRemRangeByScore(postOwner + "_post", targetScore, targetScore);
+        await client.ZADD(postOwner + "_post", obj);
 
         await client.quit();
+        return total_likes;
     }
     catch(err) {
         await client.quit();
@@ -200,7 +261,10 @@ module.exports = {
     rmExp,
     setExpAll,
     rmExpAll,
+    isKeyExist,
     loadUserLike,
     addUserLike,
+    delUserLike,
+    isAlreadyLike,
     postLike,
 };
