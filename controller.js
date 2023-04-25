@@ -10,7 +10,7 @@ const regist = async (param) => {
         return result;
     }
     catch(err) {
-        console.log("database error", err);
+        console.log("controller regist error", err);
     }
 }
 
@@ -22,7 +22,7 @@ const findDup = async (username, email) => {
         return result;
     }
     catch(err) {
-        console.log("database error", err);
+        console.log("controller findDup error", err);
     }
 }
 
@@ -34,7 +34,7 @@ const findOne = async (username_or_email) => {
         return result;
     }
     catch(err) {
-        console.log("database error", err);
+        console.log("controller findOne error", err);
     }
 }
 
@@ -48,7 +48,7 @@ const postData = async (postData) => {
         return result;
     }
     catch(err) {
-        console.log("database error", err);
+        console.log("controller postData error", err);
     }
 }
 
@@ -60,7 +60,7 @@ const fetchPost = async (username) => {
         return result;
     }
     catch(err) {
-        console.log("database error", err);
+        console.log("controller fetchPost error", err);
     }
 }
 
@@ -72,23 +72,34 @@ const newPostId = async (username) => {
         return result;
     }
     catch(err) {
-        console.log("database error", err);
+        console.log("controller newPostId error", err);
     }
 }
 
 //user_like
-const insertUserLike = async (userlike) => {
+const insertUserLike = async (username, post_id) => {
     try {
         const client = await pool.connect();
-        const result = await client.query(queries.userLike, [userlike]);
+        const result = await client.query(queries.userLike, [username, post_id]);
         client.release();
         return result;
     }
     catch(err) {
-        console.log("database error", err);
+        console.log("controller insertUserLike error", err);
     }
 }
 
+const delUserLike = async (username, post_id) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.delUserLike, [username, post_id]);
+        client.release();
+        return result;
+    }
+    catch(err) {
+        console.log("controller delUserLike error", err);
+    }
+}
 
 const fetchUserLike = async (username) => {
     try {
@@ -98,7 +109,7 @@ const fetchUserLike = async (username) => {
         return result;
     }
     catch(err) {
-        console.log("database error", err);
+        console.log("controller fetchUserLike error", err);
     }
 }
 
@@ -112,5 +123,6 @@ module.exports = {
     fetchPost,
     newPostId,
     insertUserLike,
+    delUserLike,
     fetchUserLike,
 };
