@@ -9,7 +9,8 @@ const fetchPost = 'SELECT * FROM post_records WHERE postby = $1 ORDER BY ts DESC
 const newPostId = 'SELECT post_id FROM post_records WHERE postby = $1 ORDER BY ts DESC LIMIT 1';
 
 //user_like
-const userLike = 'INSERT INTO user_likes(username, post_id, like_ts) VALUES($1, $2, $3)';
+const userLike = 'INSERT INTO user_likes(username, post_id) VALUES($1, $2)';
+const delUserLike = 'DELETE FROM user_likes WHERE username = $1 AND post_id = $2';
 const fetchUserLike = 'SELECT p.postby, p.content, p.ts, p.pinned, p.like_nums, p.retweet_nums, p.post_id, u.like_ts FROM post_records AS p, user_likes AS u WHERE u.username = $1 AND p.post_id = u.post_id ORDER BY u.like_ts DESC';
 
 module.exports = {
@@ -20,5 +21,6 @@ module.exports = {
     fetchPost,
     newPostId,
     userLike,
+    delUserLike,
     fetchUserLike,
 };
