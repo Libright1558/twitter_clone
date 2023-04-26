@@ -74,7 +74,14 @@ postsContainer.addEventListener("click", function(e) {
             })
             .then((result) => {
                 let num = target.querySelector('.likeNums');
-                num.innerHTML = result || "";
+                num.innerHTML = result.total_likes || "";
+
+                if(result.isAlreadyLike === true) {
+                    target.classList.remove("active");
+                }
+                else if(result.isAlreadyLike === false) {
+                    target.classList.add("active");
+                }
             })
         }
     }
@@ -92,17 +99,17 @@ function getPostIdFromElement(element) {
 
 function createPostHtml(result) {
 
-    let fullName = result.firstName + " " + result.lastName;
+    let fullName = userLoggedIn.firstName + " " + userLoggedIn.lastName;
 
     return `<div class='post' data-id='${result.post_id}'>
                 <div class='mainContentContainer'>
                     <div class='userImageContainer'>
-                        <img src='${result.profilePic}'>
+                        <img src='${userLoggedIn.profilePic}'>
                     </div>
                     <div class='postContentContainer'>
                         <div class='header'>
                             <a href='' class='displayName'>${fullName}</a>
-                            <span class='username'>@${result.username}</span>
+                            <span class='username'>@${userLoggedIn.username}</span>
                             <span class='date'>${result.timestamp}</span>
                         </div>
                         <div class='postBody'>
@@ -114,12 +121,12 @@ function createPostHtml(result) {
                                 <i class="fa-regular fa-comment"></i> <!-- This is an icon -->
                                 </button>
                             </div>
-                            <div class='postButtonContainer'>
+                            <div class='postButtonContainer green'>
                                 <button>
                                 <i class="fa-solid fa-retweet"></i> <!-- This is an icon -->
                                 </button>
                             </div>
-                            <div class='postButtonContainer'>
+                            <div class='postButtonContainer red'>
                                 <button class='likeButton'>
                                 <i class="fa-regular fa-heart"></i> <!-- This is an icon -->
                                 <span class='likeNums'>${result.like_nums || ""}</span>
