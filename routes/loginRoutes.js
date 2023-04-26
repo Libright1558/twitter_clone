@@ -39,6 +39,7 @@ router.post("/", async (req, res, next) => {
                     'username': user.rows[0].username,
                     'email': user.rows[0].email,
                     'profilePic': user.rows[0].profilepic,
+                    'user_id': user.rows[0].user_id,
                 };
                 await redis_cache.rmExpAll(req.session.user.username);
                 return res.redirect("/");
