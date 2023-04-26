@@ -12,19 +12,7 @@ app.use(express.urlencoded({extended: false}));
 router.get("/", async (req, res, next) => {
     try {
         const username = req.session.user.username;
-        const email = req.session.user.email;
-        const profilePic = req.session.user.profilePic;
-        const firstName = req.session.user.firstName;
-        const lastName = req.session.user.lastName;
-
-        const userInfo = {
-            "username": username, 
-            "email": email, "profilePic": profilePic, 
-            "firstName": firstName, "lastName": lastName,
-        }
-
         const userPosts = await redis_cache.getPost(username);
-        userPosts.push(userInfo);
         res.status(200).send(JSON.stringify(userPosts));
     }
     catch(err) {
@@ -108,6 +96,8 @@ router.put("/:id/like", express.json(), async (req, res, next) => {
                 console.log(error);
                 res.sendStatus(400);
             });
+
+            await controller.increLike(owner);
         }
         else if(isAlreadyLike === true) {
             controller.delUserLike(username, postId)
@@ -118,10 +108,17 @@ router.put("/:id/like", express.json(), async (req, res, next) => {
                 console.log(error);
                 res.sendStatus(400);
             });
+
+            await controller.decreLike(owner);
         }
         const total_likes = await redis_cache.postLike(owner, postId, isAlreadyLike);
 
-        res.status(200).send(JSON.stringify(total_likes));
+        const obj = {
+            "total_likes": total_likes,
+            "isAlreadyLike": isAlreadyLike,
+        }
+
+        res.status(200).send(JSON.stringify(obj));
     }
     catch(err) {
         console.log("posts.js router.put error", err);
