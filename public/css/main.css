@@ -6,6 +6,7 @@
     --blueLight: #9BD1F9;
     --greyText: rgb(101, 119, 134);
     --greyButtonText: rgba(0,0,0,0.34);
+    --red: rgb(226,34,94);
 }
 
 * {
@@ -181,4 +182,8 @@ h1 {
     background-color: #d4edff;
     color: var(--blue);
     border-radius: 50%;
+}
+
+.postButtonContainer.red button.active {
+    color: var(--red);
 }
