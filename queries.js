@@ -7,6 +7,8 @@ const findOne = 'SELECT * FROM user_records WHERE username = $1 OR email = $1';
 const postData = 'INSERT INTO post_records(postby, content, pinned, ts) VALUES($1, $2, $3, $4)';
 const fetchPost = 'SELECT * FROM post_records WHERE postby = $1 ORDER BY ts DESC';
 const newPostId = 'SELECT post_id FROM post_records WHERE postby = $1 ORDER BY ts DESC LIMIT 1';
+const increLike = 'UPDATE post_records SET like_nums = like_nums + 1 WHERE postby = $1';
+const decreLike = 'UPDATE post_records SET like_nums = like_nums - 1 WHERE postby = $1';
 
 //user_like
 const userLike = 'INSERT INTO user_likes(username, post_id) VALUES($1, $2)';
@@ -20,6 +22,8 @@ module.exports = {
     postData,
     fetchPost,
     newPostId,
+    increLike,
+    decreLike,
     userLike,
     delUserLike,
     fetchUserLike,
