@@ -98,6 +98,28 @@ const removeLikePeople = async (username, post_id) => {
     }
 }
 
+const insertRetweetPeople = async (username, post_id) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.insertRetweetPeople, [username, post_id]);
+        client.release();
+    }
+    catch(err) {
+        console.log("controller insertRetweetPeople error", err);
+    }
+}
+
+const removeRetweetPeople = async (username, post_id) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.removeRetweetPeople, [username, post_id]);
+        client.release();
+    }
+    catch(err) {
+        console.log("controller removeRetweetPeople error", err);
+    }
+}
+
 //user_like
 const insertUserLike = async (username, post_id) => {
     try {
@@ -135,18 +157,66 @@ const fetchUserLike = async (username) => {
     }
 }
 
+//user_retweet
+const insertUserRetweet = async (username, post_id) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.userRetweet, [username, post_id]);
+        client.release();
+        return result;
+    }
+    catch(err) {
+        console.log("controller insertUserRetweet error", err);
+    }
+}
+
+const delUserRetweet = async (username, post_id) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.delUserRetweet, [username, post_id]);
+        client.release();
+        return result;
+    }
+    catch(err) {
+        console.log("controller delUserRetweet error", err);
+    }
+}
+
+const fetchUserRetweet = async (username) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.fetchUserRetweet, [username]);
+        client.release();
+        return result;
+    }
+    catch(err) {
+        console.log("controller fetchUserRetweet error", err);
+    }
+}
 
 
 module.exports = {
+    //regist
     regist,
     findDup,
     findOne,
+
+    //post
     postData,
     fetchPost,
     newPostId,
     insertLikePeople,
     removeLikePeople,
+    insertRetweetPeople,
+    removeRetweetPeople,
+
+    //user_like
     insertUserLike,
     delUserLike,
     fetchUserLike,
+    
+    //user_retweet
+    insertUserRetweet,
+    delUserRetweet,
+    fetchUserRetweet,
 };
