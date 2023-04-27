@@ -12,16 +12,16 @@ document.addEventListener("DOMContentLoaded", () => {
             "timestamp": null,
             "postData": null,
             "post_id": null,
-            "like_nums": null,
-            "retweet_nums": null,
+            "like_people": null,
+            "retweet_people": null,
         }
 
         results.forEach(result => {
             resultPost.timestamp = result.ts;
             resultPost.postData = result.content;
             resultPost.post_id = result.post_id;
-            resultPost.like_nums = Number(result.like_nums);
-            resultPost.retweet_nums = Number(result.retweet_nums);
+            resultPost.like_people = JSON.parse(JSON.stringify(result.like_people === null ? [] : result.like_people));
+            resultPost.retweet_people = JSON.parse(JSON.stringify(result.retweet_people === null ? [] : result.retweet_people));
 
             let html = createPostHtml(resultPost);
             postsContainer.insertAdjacentHTML("beforeend", html);
