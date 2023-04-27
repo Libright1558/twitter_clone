@@ -30,7 +30,9 @@ const getPost = async (username) => {
         return recordsObj;
     }
     catch(err) {
-        await client.quit();
+        if(client.isOpen) {
+            await client.quit();
+        }
         console.log("redis fetch error", err);
         return;
     }
@@ -56,7 +58,9 @@ const addPost = async (username, post) => {
         await client.quit();
     }
     catch(err) {
-        await client.quit();
+        if(client.isOpen) {
+            await client.quit();
+        }
         console.log("redis addPost error", err);
         return;
     }
@@ -73,7 +77,9 @@ const setExp = async (key, times) => {
         await client.quit();
     }
     catch(err) {
-        await client.quit();
+        if(client.isOpen) {
+            await client.quit();
+        }
         console.log("redis setExp error", err);
         return;
     }
@@ -88,7 +94,9 @@ const rmExp = async (key) => {
         await client.quit();
     }
     catch(err) {
-        await client.quit();
+        if(client.isOpen) {
+            await client.quit();
+        }
         console.log("redis rmExp error", err);
         return;
     }
@@ -116,7 +124,9 @@ const isKeyExist = async (key) => {
         return !isExist.length ? false : true;
     }
     catch(err) {
-        await client.quit();
+        if(client.isOpen) {
+            await client.quit();
+        }
         console.log("redis isKeyExist error", err);
         return;
     }
@@ -146,7 +156,9 @@ const loadUserLike = async (username) => {
         return result;
     }
     catch(err) {
-        await client.quit();
+        if(client.isOpen) {
+            await client.quit();
+        }
         console.log("redis loadUserLike error", err);
         return;
     }
@@ -176,7 +188,9 @@ const addUserLike = async (username, postOwner, postId) => {
         await client.quit();
     }
     catch(err) {
-        await client.quit();
+        if(client.isOpen) {
+            await client.quit();
+        }
         console.log("redis addUserLike error", err);
         return;
     }
@@ -193,12 +207,15 @@ const delUserLike = async (username, postId) => {
         await client.quit();
     }
     catch(err) {
-        await client.quit();
+        if(client.isOpen) {
+            await client.quit();
+        }
         console.log("redis delUserLike error", err);
         return;
     }
 }
 
+//AlreadyLike
 const isAlreadyLike = async (username, postId) => {
     try {
         await client.connect();
@@ -216,28 +233,39 @@ const isAlreadyLike = async (username, postId) => {
         return result;
     }
     catch(err) {
-        await client.quit();
+        if(client.isOpen) {
+            await client.quit();
+        }
         console.log("redis isAlreadyLike error", err);
         return;
     }
 }
 
 //post_like
-const postLike = async (postOwner, postId, alreadyLike) => {
+const postLike = async (postOwner, like_username, postId) => {
     try {
         await client.connect();
 
         const targetScore = await client.hGet(postOwner + "_post_hashTable", postId);
         const targetNode = await client.ZRANGE(postOwner + "_post", targetScore, targetScore, 'BYSCORE');
         let result = JSON.parse(targetNode);
-        let total_likes;
-        if(alreadyLike === false) {
-            total_likes = Number(result.like_nums) + 1;
+        
+        if(result.like_people === null) {
+            result.like_people = JSON.parse(JSON.stringify([like_username]));
         }
         else {
-            total_likes = Number(result.like_nums) - 1;
+            if(result.like_people.includes(like_username) === false) {
+                result.like_people.push(like_username);
+            }
+            else {
+                const index = result.like_people.indexOf(like_username);
+                if(index > -1) {
+                    result.like_people.splice(index, 1);
+                }
+            }
         }
-        result.like_nums = total_likes.toString();
+        
+        const like_nums = result.like_people.length;
         const SCore = Number(targetScore);
         const obj = {score: SCore, value: JSON.stringify(result)};
 
@@ -245,10 +273,12 @@ const postLike = async (postOwner, postId, alreadyLike) => {
         await client.ZADD(postOwner + "_post", obj);
 
         await client.quit();
-        return total_likes;
+        return like_nums;
     }
     catch(err) {
-        await client.quit();
+        if(client.isOpen) {
+            await client.quit();
+        }
         console.log("redis postLike error", err);
         return;
     }
