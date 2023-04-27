@@ -74,7 +74,7 @@ postsContainer.addEventListener("click", function(e) {
             })
             .then((result) => {
                 let num = target.querySelector('.likeNums');
-                num.innerHTML = result.total_likes || "";
+                num.innerHTML = result.like_nums || "";
 
                 if(result.isAlreadyLike === true) {
                     target.classList.remove("active");
@@ -100,6 +100,8 @@ function getPostIdFromElement(element) {
 function createPostHtml(result) {
 
     let fullName = userLoggedIn.firstName + " " + userLoggedIn.lastName;
+
+    let likeButtonActiveClass = result.like_people.includes(userLoggedIn.username) ? "active" : "";
 
     return `<div class='post' data-id='${result.post_id}'>
                 <div class='mainContentContainer'>
@@ -127,9 +129,9 @@ function createPostHtml(result) {
                                 </button>
                             </div>
                             <div class='postButtonContainer red'>
-                                <button class='likeButton'>
+                                <button class='likeButton ${likeButtonActiveClass}'>
                                 <i class="fa-regular fa-heart"></i> <!-- This is an icon -->
-                                <span class='likeNums'>${result.like_nums || ""}</span>
+                                <span class='likeNums'>${result.like_people.length || ""}</span>
                                 </button>
                             </div>
                         </div>
