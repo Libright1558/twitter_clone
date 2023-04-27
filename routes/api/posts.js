@@ -33,10 +33,6 @@ router.post("/", express.json(), (req, res, next) => {
         controller.postData(postData)
         .then(async () => {
             const username = req.session.user.username;
-            const email = req.session.user.email;
-            const profilePic = req.session.user.profilePic;
-            const firstName = req.session.user.firstName;
-            const lastName = req.session.user.lastName;
             const content = req.body.content;
     
             const postId = await controller.newPostId(username);
@@ -47,19 +43,18 @@ router.post("/", express.json(), (req, res, next) => {
                 "postby": username,
                 "ts": time,
                 "post_id": postId.rows[0].post_id,
+                "like_people": [],
+                "retweet_people": [],
             }
     
             await redis_cache.addPost(username, newPost);
     
             const deliver = {
                 "postData": content, 
-                "username": username, 
-                "email": email, 
-                "profilePic": profilePic, 
-                "firstName": firstName, 
-                "lastName": lastName, 
                 "timestamp": time,
                 "post_id": postId,
+                "like_people": [],
+                "retweet_people": [],
             };
     
             res.status(201).send(JSON.stringify(deliver));
@@ -89,33 +84,29 @@ router.put("/:id/like", express.json(), async (req, res, next) => {
         const isAlreadyLike = await redis_cache.isAlreadyLike(username, postId);
         if(isAlreadyLike === false) {
             controller.insertUserLike(username, postId)
-            .then(async () => {
-                await redis_cache.addUserLike(username, owner, postId);
-            })
             .catch(error => {
                 console.log(error);
                 res.sendStatus(400);
             });
-
-            await controller.increLike(owner);
+            
+            await redis_cache.addUserLike(username, owner, postId);
+            await controller.insertLikePeople(username, postId);     
         }
         else if(isAlreadyLike === true) {
             controller.delUserLike(username, postId)
-            .then(async () => {
-                await redis_cache.delUserLike(username, postId);
-            })
             .catch(error => {
                 console.log(error);
                 res.sendStatus(400);
             });
-
-            await controller.decreLike(owner);
+            
+            await redis_cache.delUserLike(username, postId);
+            await controller.removeLikePeople(username, postId);
         }
-        const total_likes = await redis_cache.postLike(owner, postId, isAlreadyLike);
+        const like_nums = await redis_cache.postLike(owner, username, postId);
 
         const obj = {
-            "total_likes": total_likes,
             "isAlreadyLike": isAlreadyLike,
+            "like_nums": like_nums,
         }
 
         res.status(200).send(JSON.stringify(obj));
