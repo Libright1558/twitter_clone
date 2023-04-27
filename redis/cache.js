@@ -284,17 +284,192 @@ const postLike = async (postOwner, like_username, postId) => {
     }
 }
 
+//user_retweet
+const loadUserRetweet = async (username) => {
+    try {
+        await client.connect();
+        
+        let userRetweet = await client.ZRANGE(username + "_retweet", 0, -1);
+        if(!userRetweet.length) {
+            const retweet = await controller.fetchUserRetweet(username);
+            await client.DEL(username + "_retweet_hashTable");
+
+            let count = 0;
+            retweet.rows.forEach(async (row) => {
+                let obj = {score: count++, value: JSON.stringify(row)};
+                await client.ZADD(username + "_retweet", obj);
+                await client.hSet(username + "_retweet_hashTable", row.post_id, obj.score);
+            });
+            userRetweet = await client.ZRANGE(username + "_retweet", 0, -1);
+        }// if redis cache is empty, load user_retweet from database
+
+        const result = userRetweet.map(str => JSON.parse(str));
+        await client.quit();
+        return result;
+    }
+    catch(err) {
+        if(client.isOpen) {
+            await client.quit();
+        }
+        console.log("redis loadUserRetweet error", err);
+        return;
+    }
+}
+
+const addUserRetweet = async (username, postOwner, postId) => {
+    try {
+        await client.connect();
+
+        let member = await client.ZRANGE(username + "_retweet", 0, 0);
+        let first = 0;
+
+        if(member.length) {
+            let score = await client.zScore(username + "_retweet", member.toString());
+            first = score - 1;
+        }
+        const targetScore = await client.hGet(postOwner + "_post_hashTable", postId);
+        const targetNode = await client.ZRANGE(postOwner + "_post", targetScore, targetScore, 'BYSCORE');
+        let post = JSON.parse(targetNode);
+
+        let obj = {score: first, value: JSON.stringify(post)}; 
+        
+        await client.ZADD(username + "_retweet", obj);
+        await client.hSet(username + "_retweet_hashTable", post.post_id, obj.score);
+
+        await client.quit();
+    }
+    catch(err) {
+        if(client.isOpen) {
+            await client.quit();
+        }
+        console.log("redis addUserRetweet error", err);
+        return;
+    }
+}
+
+const delUserRetweet = async (username, postId) => {
+    try {
+        await client.connect();
+
+        const targetScore = await client.hGet(username + "_retweet_hashTable", postId);
+        await client.zRemRangeByScore(username + "_retweet", targetScore, targetScore);
+        await client.hDel(username + "_retweet_hashTable", postId);
+
+        await client.quit();
+    }
+    catch(err) {
+        if(client.isOpen) {
+            await client.quit();
+        }
+        console.log("redis delUserRetweet error", err);
+        return;
+    }
+}
+
+
+//post_retweet
+const postRetweet = async (postOwner, retweet_username, postId) => {
+    try {
+        await client.connect();
+
+        const targetScore = await client.hGet(postOwner + "_post_hashTable", postId);
+        const targetNode = await client.ZRANGE(postOwner + "_post", targetScore, targetScore, 'BYSCORE');
+        let result = JSON.parse(targetNode);
+        
+        if(result.retweet_people === null) {
+            result.retweet_people = JSON.parse(JSON.stringify([retweet_username]));
+        }
+        else {
+            if(result.retweet_people.includes(retweet_username) === false) {
+                result.retweet_people.push(retweet_username);
+            }
+            else {
+                const index = result.retweet_people.indexOf(retweet_username);
+                if(index > -1) {
+                    result.retweet_people.splice(index, 1);
+                }
+            }
+        }
+        
+        const retweet_nums = result.retweet_people.length;
+        const SCore = Number(targetScore);
+        const obj = {score: SCore, value: JSON.stringify(result)};
+
+        await client.zRemRangeByScore(postOwner + "_post", targetScore, targetScore);
+        await client.ZADD(postOwner + "_post", obj);
+
+        await client.quit();
+        return retweet_nums;
+    }
+    catch(err) {
+        if(client.isOpen) {
+            await client.quit();
+        }
+        console.log("redis postRetweet error", err);
+        return;
+    }
+}
+
+//AlreadyRetweet
+const isAlreadyRetweet = async (username, postId) => {
+    try {
+        await client.connect();
+
+        const targetScore = await client.hGet(username + "_retweet_hashTable", postId);
+        let result;
+        if(targetScore === undefined || targetScore === null) {
+            result = false;
+        }
+        else {
+            result = true;
+        }
+
+        await client.quit();
+        return result;
+    }
+    catch(err) {
+        if(client.isOpen) {
+            await client.quit();
+        }
+        console.log("redis isAlreadyRetweet error", err);
+        return;
+    }
+}
+
+
 module.exports = {
+    //post
     getPost,
     addPost,
+
+    //remove expire and set expire
     setExp,
     rmExp,
     setExpAll,
     rmExpAll,
+
+    //ket exist
     isKeyExist,
+
+    //user_like
     loadUserLike,
     addUserLike,
     delUserLike,
+
+    //AlreadyLike
     isAlreadyLike,
+
+    //post_like
     postLike,
+
+    //user_retweet
+    loadUserRetweet,
+    addUserRetweet,
+    delUserRetweet,
+
+    //post_retweet
+    postRetweet,
+
+    //AlreadyRetweet
+    isAlreadyRetweet,
 };
