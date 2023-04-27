@@ -42,15 +42,16 @@ submitPostButton.addEventListener("click", () => {
 });
 
 
-//like button click handler
+
 const postsContainer = document.querySelector('.postsContainer');
 
 postsContainer.addEventListener("click", function(e) {
 
-    const target = e.target.closest(".likeButton");
+    const likeTarget = e.target.closest(".likeButton");
 
-    if(target) {
-        let postId = getPostIdFromElement(target);
+    //like button click handler
+    if(likeTarget) {
+        let postId = getPostIdFromElement(likeTarget);
         if(postId !== undefined) {
 
             const postContentContainer = e.target.closest(".postContentContainer");
@@ -73,20 +74,63 @@ postsContainer.addEventListener("click", function(e) {
                 return response.json();
             })
             .then((result) => {
-                let num = target.querySelector('.likeNums');
+                let num = likeTarget.querySelector('.likeNums');
                 num.innerHTML = result.like_nums || "";
 
                 if(result.isAlreadyLike === true) {
-                    target.classList.remove("active");
+                    likeTarget.classList.remove("active");
                 }
                 else if(result.isAlreadyLike === false) {
-                    target.classList.add("active");
+                    likeTarget.classList.add("active");
                 }
             })
         }
     }
-    
+
+    //retweet button click handler
+    const retweetTarget = e.target.closest(".retweetButton");
+
+    if(retweetTarget) {
+        let postId = getPostIdFromElement(retweetTarget);
+        if(postId !== undefined) {
+
+            const postContentContainer = e.target.closest(".postContentContainer");
+            const username = postContentContainer.querySelector('.username').innerHTML;
+            const usernameMinusAT = username.slice(1);
+
+            let updateRetweet = {
+                "postId": postId,
+                "postOwner": usernameMinusAT,
+            }
+
+            fetch(`api/posts/${postId}/retweet`, {
+                method: "PUT",
+                body: JSON.stringify(updateRetweet),
+                headers: {
+                    "Content-Type": "application/json"
+                },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then((result) => {
+                let num = retweetTarget.querySelector('.retweetNums');
+                num.innerHTML = result.retweet_nums || "";
+
+                if(result.isAlreadyRetweet === true) {
+                    retweetTarget.classList.remove("active");
+                }
+                else if(result.isAlreadyRetweet === false) {
+                    retweetTarget.classList.add("active");
+                }
+            })
+        }
+    }
+
 }, false);
+
+
+
 
 
 function getPostIdFromElement(element) {
@@ -102,6 +146,7 @@ function createPostHtml(result) {
     let fullName = userLoggedIn.firstName + " " + userLoggedIn.lastName;
 
     let likeButtonActiveClass = result.like_people.includes(userLoggedIn.username) ? "active" : "";
+    let retweetButtonActiveClass = result.retweet_people.includes(userLoggedIn.username) ? "active" : "";
 
     return `<div class='post' data-id='${result.post_id}'>
                 <div class='mainContentContainer'>
@@ -124,8 +169,9 @@ function createPostHtml(result) {
                                 </button>
                             </div>
                             <div class='postButtonContainer green'>
-                                <button>
+                                <button class='retweetButton ${retweetButtonActiveClass}'>
                                 <i class="fa-solid fa-retweet"></i> <!-- This is an icon -->
+                                <span class='retweetNums'>${result.retweet_people.length || ""}</span>
                                 </button>
                             </div>
                             <div class='postButtonContainer red'>
