@@ -76,27 +76,25 @@ const newPostId = async (username) => {
     }
 }
 
-const increLike = async (owner) => {
+const insertLikePeople = async (username, post_id) => {
     try {
         const client = await pool.connect();
-        const result = await client.query(queries.increLike, [owner]);
+        const result = await client.query(queries.insertLikePeople, [username, post_id]);
         client.release();
-        return result;
     }
     catch(err) {
-        console.log("controller increLike error", err);
+        console.log("controller insertLikePeople error", err);
     }
 }
 
-const decreLike = async (owner) => {
+const removeLikePeople = async (username, post_id) => {
     try {
         const client = await pool.connect();
-        const result = await client.query(queries.decreLike, [owner]);
+        const result = await client.query(queries.removeLikePeople, [username, post_id]);
         client.release();
-        return result;
     }
     catch(err) {
-        console.log("controller decreLike error", err);
+        console.log("controller removeLikePeople error", err);
     }
 }
 
@@ -146,8 +144,8 @@ module.exports = {
     postData,
     fetchPost,
     newPostId,
-    increLike,
-    decreLike,
+    insertLikePeople,
+    removeLikePeople,
     insertUserLike,
     delUserLike,
     fetchUserLike,
