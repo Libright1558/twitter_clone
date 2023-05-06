@@ -64,6 +64,44 @@ const fetchPost = async (username) => {
     }
 }
 
+
+const fetchPinned = async (username) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.fetchPinned, [username]);
+        client.release();
+        return result;
+    } 
+    catch (err) {
+        console.log("controller fetchPinned error", err);
+    }
+}
+
+const fetchLikePeople = async (username) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.fetchLikePeople, [username]);
+        client.release();
+        return result;
+    } 
+    catch (err) {
+        console.log("controller fetchLikePeople error", err);
+    }
+}
+
+const fetchRetweetPeople = async (username) => {
+    try {
+        const client = await pool.connect();
+        const result = await client.query(queries.fetchRetweetPeople, [username]);
+        client.release();
+        return result;
+    } 
+    catch (err) {
+        console.log("controller fetchRetweetPeople error", err);
+    }
+}
+
+
 const newPostId = async (username) => {
     try {
         const client = await pool.connect();
@@ -203,10 +241,17 @@ module.exports = {
 
     //post
     postData,
+
     fetchPost,
+    fetchPinned,
+    fetchLikePeople,
+    fetchRetweetPeople,
+
     newPostId,
+
     insertLikePeople,
     removeLikePeople,
+
     insertRetweetPeople,
     removeRetweetPeople,
 
