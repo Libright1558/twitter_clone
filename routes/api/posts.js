@@ -13,12 +13,26 @@ router.get("/", async (req, res, next) => {
     try {
         const username = req.session.user.username;
         const userPosts = await redis_cache.getPost(username);
-        res.status(200).send(JSON.stringify(userPosts));
+        const userRetweets = await redis_cache.loadUserRetweet(username);
+
+        const obj = {
+            "userPosts": userPosts,
+            "userRetweets": userRetweets,
+        }
+
+        res.status(200).send(JSON.stringify(obj));
     }
     catch(err) {
         console.log("posts.js router.get error", err);
         return;
     }
+})
+
+
+
+router.get("/:id", (req, res, next) => {
+    const postId = req.params.id;
+    
 })
 
 router.post("/", express.json(), (req, res, next) => {
@@ -39,12 +53,9 @@ router.post("/", express.json(), (req, res, next) => {
     
             const newPost = {
                 "content": content,
-                "pinned": false,
                 "postby": username,
-                "ts": time,
+                "post_ts": time,
                 "post_id": postId.rows[0].post_id,
-                "like_people": [],
-                "retweet_people": [],
             }
     
             await redis_cache.addPost(username, newPost);
@@ -70,18 +81,42 @@ router.post("/", express.json(), (req, res, next) => {
     }
 })
 
+router.post("/:id/retweetAndLike", express.json(), async (req, res, next) => {
+    try {
+        const postOwner = req.body.postOwner;
+        const postId = req.body.postId;
+
+        const retweetPeople = await redis_cache.getRetweetPeople(postOwner, postId);
+        const likePeople = await redis_cache.getLikePeople(postOwner, postId);
+
+        const obj = {
+            "retweetPeople": retweetPeople,
+            "likePeople": likePeople,
+        }
+
+        res.status(200).send(JSON.stringify(obj));
+    }
+    catch(err) {
+        console.log("posts.js router.getRetweetAndLike error", err);
+        return;
+    }
+})
+
 router.put("/:id/like", express.json(), async (req, res, next) => {
     try {
         const postId = req.body.postId;
         const username = req.session.user.username;
         const owner = req.body.postOwner;
 
-        const isUserLikeKeyExist = await redis_cache.isKeyExist(username + "_like");
-        if(isUserLikeKeyExist === false) {
-            await redis_cache.loadUserLike(username);
-        }
+        let likePeopleArray = await redis_cache.getLikePeople(username, postId);
+        likePeopleArray = JSON.parse(likePeopleArray);
         
-        const isAlreadyLike = await redis_cache.isAlreadyLike(username, postId);
+        let isAlreadyLike = true;
+        if(likePeopleArray === null || likePeopleArray.includes(username) === false) {
+            isAlreadyLike = false;
+        }
+
+
         if(isAlreadyLike === false) {
             controller.insertUserLike(username, postId)
             .catch(error => {
@@ -123,12 +158,16 @@ router.put("/:id/retweet", express.json(), async (req, res, next) => {
         const username = req.session.user.username;
         const owner = req.body.postOwner;
 
-        const isUserRetweetKeyExist = await redis_cache.isKeyExist(username + "_retweet");
-        if(isUserRetweetKeyExist === false) {
-            await redis_cache.loadUserRetweet(username);
+
+        let retweetPeopleArray = await redis_cache.getRetweetPeople(username, postId);
+        retweetPeopleArray = JSON.parse(retweetPeopleArray);
+        
+        let isAlreadyRetweet = true;
+        if(retweetPeopleArray === null || retweetPeopleArray.includes(username) === false) {
+            isAlreadyRetweet = false;
         }
         
-        const isAlreadyRetweet = await redis_cache.isAlreadyRetweet(username, postId);
+
         if(isAlreadyRetweet === false) {
             controller.insertUserRetweet(username, postId)
             .catch(error => {
