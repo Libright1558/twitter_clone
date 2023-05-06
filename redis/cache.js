@@ -14,27 +14,132 @@ const getPost = async (username) => {
         if(!postRecords.length) {
             const userPosts = await controller.fetchPost(username);
             await client.DEL(username + "_post_hashTable");
+            await client.DEL(username + "_pinned");
+            await client.DEL(username + "_like_people");
+            await client.DEL(username + "_retweet_people");
 
             let count = 0;
-            userPosts.rows.forEach(async (row) => {
-                row.ts = moment(row.ts).format("YYYY-MM-DD HH:mm:ss");
-                let obj = {score: count++, value: JSON.stringify(row)};
+
+            let data = {
+                "postby": null,
+                "content": null,
+                "ts": null,
+                "post_id": null,
+            }
+            
+            const rowLength = userPosts.rows.length;
+            
+            for(let i = 0; i < rowLength; i++) {
+                
+                data.postby = userPosts.rows[i].postby;
+                data.content = userPosts.rows[i].content;
+                data.ts = moment(userPosts.rows[i].ts).format("YYYY-MM-DD HH:mm:ss");
+                data.post_id = userPosts.rows[i].post_id;
+                    
+                let obj = {score: count++, value: JSON.stringify(data)};
                 await client.ZADD(username + "_post", obj);
-                await client.hSet(username + "_post_hashTable", row.post_id, obj.score);
-            });
+                await client.hSet(username + "_post_hashTable", userPosts.rows[i].post_id, obj.score);
+    
+                await client.hSet(username + "_pinned", userPosts.rows[i].post_id, JSON.stringify(userPosts.rows[i].pinned));
+                await client.hSet(username + "_like_people", userPosts.rows[i].post_id, JSON.stringify(userPosts.rows[i].like_people));
+                await client.hSet(username + "_retweet_people", userPosts.rows[i].post_id, JSON.stringify(userPosts.rows[i].retweet_people));
+            }
+
             postRecords = await client.ZRANGE(username + "_post", 0, -1);
         }// if redis cache is empty, load data from database
+        else {
 
+            let isExist = await client.KEYS(username + "_pinned");
+
+            if(!isExist.length) {
+                const userPinned = controller.fetchPinned(username);
+                
+                const rowLength = userPinned.rows.length;
+                for(let i = 0; i < rowLength; i++) {
+                    await client.hSet(username + "_pinned", userPinned.rows[i].post_id, JSON.stringify(userPinned.rows[i].pinned));
+                }
+            }
+            
+            isExist = await client.KEYS(username + "_like_people");
+
+
+            if(!isExist.length) {
+                const userLikePeople = controller.fetchLikePeople(username);
+
+                const rowLength = userLikePeople.rows.length;
+                for(let i = 0; i < rowLength; i++) {
+                    await client.hSet(username + "_like_people", userLikePeople.rows[i].post_id, JSON.stringify(userLikePeople.rows[i].like_people));
+                }
+            }
+    
+            isExist = await client.KEYS(username + "_retweet_people");
+
+            if(!isExist.length) {
+                const userRetweetPeople = controller.fetchRetweetPeople(username);
+
+                const rowLength = userRetweetPeople.rows.length;
+                for(let i = 0; i < rowLength; i++) {
+                    await client.hSet(username + "_retweet_people", userRetweetPeople.rows[i].post_id, JSON.stringify(userRetweetPeople.rows[i].retweet_people));
+                }
+            }
+        }
+        
         const recordsObj = postRecords.map(str => JSON.parse(str));
-        await client.quit();
         return recordsObj;
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis fetch error", err);
-        return;
+    }
+    finally {
+        await client.quit();
+    }
+}
+
+const getLikePeople = async (username, postId) => {
+    try {
+        await client.connect();
+
+        const likePeopleArray = await client.hGet(username + "_like_people", postId);
+
+        return likePeopleArray;
+    } 
+    catch (err) {
+        console.log("redis getLikePeople error", err);
+    }
+    finally {
+        await client.quit();
+    }
+}
+
+const getRetweetPeople = async (username, postId) => {
+    try {
+        await client.connect();
+
+        const retweetPeopleArray = await client.hGet(username + "_retweet_people", postId);
+
+        return retweetPeopleArray;
+    } 
+    catch (err) {
+        console.log("redis getRetweetPeople error", err);
+    }
+    finally {
+        await client.quit();
+    }
+}
+
+const getPinned = async (username, postId) => {
+    try {
+        await client.connect();
+
+        const PinnedBoolean = await client.hGet(username + "_pinned", postId);
+
+        return PinnedBoolean;
+    } 
+    catch (err) {
+        console.log("redis getPinned error", err);
+    }
+    finally {
+        await client.quit();
     }
 }
 
@@ -54,15 +159,12 @@ const addPost = async (username, post) => {
 
         await client.ZADD(username + "_post", obj);
         await client.hSet(username + "_post_hashTable", post.post_id, obj.score);
-
-        await client.quit();
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis addPost error", err);
-        return;
+    }
+    finally {
+        await client.quit();
     }
 }
 
@@ -73,15 +175,12 @@ const setExp = async (key, times) => {
         await client.connect();
 
         client.expire(key, times);
-
-        await client.quit();
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis setExp error", err);
-        return;
+    }
+    finally {
+        await client.quit();
     }
 }
 
@@ -90,15 +189,12 @@ const rmExp = async (key) => {
         await client.connect();
         
         client.persist(key);
-
-        await client.quit();
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis rmExp error", err);
-        return;
+    }
+    finally {
+        await client.quit();
     }
 }
 
@@ -112,26 +208,6 @@ const rmExpAll = async (key) => {
     await rmExp(key + "_post");
 }
 
-
-//ket exist
-const isKeyExist = async (key) => {
-    try {
-        await client.connect();
-
-        const isExist = await client.KEYS(key);
-
-        await client.quit();
-        return !isExist.length ? false : true;
-    }
-    catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
-        console.log("redis isKeyExist error", err);
-        return;
-    }
-}
-
 //user_like
 const loadUserLike = async (username) => {
     try {
@@ -143,24 +219,25 @@ const loadUserLike = async (username) => {
             await client.DEL(username + "_like_hashTable");
 
             let count = 0;
-            like.rows.forEach(async (row) => {
-                let obj = {score: count++, value: JSON.stringify(row)};
+
+            const likeLength = like.rows.length;
+            for(let i = 0; i < likeLength; i++) {
+                let obj = {score: count++, value: JSON.stringify(like.rows[i])};
                 await client.ZADD(username + "_like", obj);
-                await client.hSet(username + "_like_hashTable", row.post_id, obj.score);
-            });
+                await client.hSet(username + "_like_hashTable", like.rows[i].post_id, obj.score);
+            }
+            
             userLike = await client.ZRANGE(username + "_like", 0, -1);
         }// if redis cache is empty, load user_like from database
 
         const result = userLike.map(str => JSON.parse(str));
-        await client.quit();
         return result;
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis loadUserLike error", err);
-        return;
+    }
+    finally {
+        await client.quit();
     }
 }
 
@@ -179,20 +256,17 @@ const addUserLike = async (username, postOwner, postId) => {
         const targetScore = await client.hGet(postOwner + "_post_hashTable", postId);
         const targetNode = await client.ZRANGE(postOwner + "_post", targetScore, targetScore, 'BYSCORE');
         let post = JSON.parse(targetNode);
-
+        
         let obj = {score: first, value: JSON.stringify(post)}; 
         
         await client.ZADD(username + "_like", obj);
         await client.hSet(username + "_like_hashTable", post.post_id, obj.score);
-
-        await client.quit();
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis addUserLike error", err);
-        return;
+    }
+    finally {
+        await client.quit();
     }
 }
 
@@ -203,84 +277,47 @@ const delUserLike = async (username, postId) => {
         const targetScore = await client.hGet(username + "_like_hashTable", postId);
         await client.zRemRangeByScore(username + "_like", targetScore, targetScore);
         await client.hDel(username + "_like_hashTable", postId);
-
-        await client.quit();
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis delUserLike error", err);
-        return;
     }
-}
-
-//AlreadyLike
-const isAlreadyLike = async (username, postId) => {
-    try {
-        await client.connect();
-
-        const targetScore = await client.hGet(username + "_like_hashTable", postId);
-        let result;
-        if(targetScore === undefined || targetScore === null) {
-            result = false;
-        }
-        else {
-            result = true;
-        }
-
+    finally {
         await client.quit();
-        return result;
-    }
-    catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
-        console.log("redis isAlreadyLike error", err);
-        return;
     }
 }
+
 
 //post_like
-const postLike = async (postOwner, like_username, postId) => {
+const postLike = async (postOwner,like_username, postId) => {
     try {
         await client.connect();
 
-        const targetScore = await client.hGet(postOwner + "_post_hashTable", postId);
-        const targetNode = await client.ZRANGE(postOwner + "_post", targetScore, targetScore, 'BYSCORE');
-        let result = JSON.parse(targetNode);
-        
-        if(result.like_people === null) {
-            result.like_people = JSON.parse(JSON.stringify([like_username]));
+        let rawData = await client.hGet(postOwner + "_like_people", postId);
+        let likePeopleArray = JSON.parse(rawData);
+        if(likePeopleArray === null) {
+            likePeopleArray = JSON.parse(JSON.stringify([like_username]));
+        }
+        else if(likePeopleArray.includes(like_username) === false) {
+            likePeopleArray.push(like_username);
         }
         else {
-            if(result.like_people.includes(like_username) === false) {
-                result.like_people.push(like_username);
-            }
-            else {
-                const index = result.like_people.indexOf(like_username);
-                if(index > -1) {
-                    result.like_people.splice(index, 1);
-                }
+            const index = likePeopleArray.indexOf(like_username);
+            if(index > -1) {
+                likePeopleArray.splice(index, 1);
             }
         }
-        
-        const like_nums = result.like_people.length;
-        const SCore = Number(targetScore);
-        const obj = {score: SCore, value: JSON.stringify(result)};
 
-        await client.zRemRangeByScore(postOwner + "_post", targetScore, targetScore);
-        await client.ZADD(postOwner + "_post", obj);
+        const like_nums = likePeopleArray.length;
+        await client.hDel(postOwner + "_like_people", postId);
+        await client.hSet(postOwner + "_like_people", postId, JSON.stringify(likePeopleArray));
 
-        await client.quit();
         return like_nums;
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis postLike error", err);
-        return;
+    }
+    finally {
+        await client.quit();
     }
 }
 
@@ -295,24 +332,25 @@ const loadUserRetweet = async (username) => {
             await client.DEL(username + "_retweet_hashTable");
 
             let count = 0;
-            retweet.rows.forEach(async (row) => {
-                let obj = {score: count++, value: JSON.stringify(row)};
+
+            const rowLength = retweet.rows.length;
+            for(let i = 0; i < rowLength; i++) {
+                let obj = {score: count++, value: JSON.stringify(retweet.rows[i])};
                 await client.ZADD(username + "_retweet", obj);
-                await client.hSet(username + "_retweet_hashTable", row.post_id, obj.score);
-            });
+                await client.hSet(username + "_retweet_hashTable", retweet.rows[i].post_id, obj.score);
+            }
+            
             userRetweet = await client.ZRANGE(username + "_retweet", 0, -1);
         }// if redis cache is empty, load user_retweet from database
 
         const result = userRetweet.map(str => JSON.parse(str));
-        await client.quit();
         return result;
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis loadUserRetweet error", err);
-        return;
+    }
+    finally {
+        await client.quit();
     }
 }
 
@@ -331,19 +369,16 @@ const addUserRetweet = async (username, postOwner, postId) => {
         const targetNode = await client.ZRANGE(postOwner + "_post", targetScore, targetScore, 'BYSCORE');
         let post = JSON.parse(targetNode);
 
-        let obj = {score: first, value: JSON.stringify(post)}; 
+        let obj = {score: first, value: JSON.stringify(post)};
         
         await client.ZADD(username + "_retweet", obj);
         await client.hSet(username + "_retweet_hashTable", post.post_id, obj.score);
-
-        await client.quit();
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis addUserRetweet error", err);
-        return;
+    }
+    finally {
+        await client.quit();
     }
 }
 
@@ -354,15 +389,12 @@ const delUserRetweet = async (username, postId) => {
         const targetScore = await client.hGet(username + "_retweet_hashTable", postId);
         await client.zRemRangeByScore(username + "_retweet", targetScore, targetScore);
         await client.hDel(username + "_retweet_hashTable", postId);
-
-        await client.quit();
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis delUserRetweet error", err);
-        return;
+    }
+    finally {
+        await client.quit();
     }
 }
 
@@ -372,74 +404,45 @@ const postRetweet = async (postOwner, retweet_username, postId) => {
     try {
         await client.connect();
 
-        const targetScore = await client.hGet(postOwner + "_post_hashTable", postId);
-        const targetNode = await client.ZRANGE(postOwner + "_post", targetScore, targetScore, 'BYSCORE');
-        let result = JSON.parse(targetNode);
-        
-        if(result.retweet_people === null) {
-            result.retweet_people = JSON.parse(JSON.stringify([retweet_username]));
+        let rawData = await client.hGet(postOwner + "_retweet_people", postId);
+        let retweetPeopleArray = JSON.parse(rawData);
+        if(retweetPeopleArray === null) {
+            retweetPeopleArray = JSON.parse(JSON.stringify([retweet_username]));
+        }
+        else if(retweetPeopleArray.includes(retweet_username) === false) {
+            retweetPeopleArray.push(retweet_username);
         }
         else {
-            if(result.retweet_people.includes(retweet_username) === false) {
-                result.retweet_people.push(retweet_username);
-            }
-            else {
-                const index = result.retweet_people.indexOf(retweet_username);
-                if(index > -1) {
-                    result.retweet_people.splice(index, 1);
-                }
+            const index = retweetPeopleArray.indexOf(retweet_username);
+            if(index > -1) {
+                retweetPeopleArray.splice(index, 1);
             }
         }
-        
-        const retweet_nums = result.retweet_people.length;
-        const SCore = Number(targetScore);
-        const obj = {score: SCore, value: JSON.stringify(result)};
 
-        await client.zRemRangeByScore(postOwner + "_post", targetScore, targetScore);
-        await client.ZADD(postOwner + "_post", obj);
+        const retweet_nums = retweetPeopleArray.length;
+        await client.hDel(postOwner + "_retweet_people", postId);
+        await client.hSet(postOwner + "_retweet_people", postId, JSON.stringify(retweetPeopleArray));
 
-        await client.quit();
         return retweet_nums;
     }
     catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
         console.log("redis postRetweet error", err);
-        return;
     }
-}
-
-//AlreadyRetweet
-const isAlreadyRetweet = async (username, postId) => {
-    try {
-        await client.connect();
-
-        const targetScore = await client.hGet(username + "_retweet_hashTable", postId);
-        let result;
-        if(targetScore === undefined || targetScore === null) {
-            result = false;
-        }
-        else {
-            result = true;
-        }
-
+    finally {
         await client.quit();
-        return result;
-    }
-    catch(err) {
-        if(client.isOpen) {
-            await client.quit();
-        }
-        console.log("redis isAlreadyRetweet error", err);
-        return;
     }
 }
+
+//user comment
+
 
 
 module.exports = {
     //post
     getPost,
+    getLikePeople,
+    getRetweetPeople,
+    getPinned,
     addPost,
 
     //remove expire and set expire
@@ -448,16 +451,11 @@ module.exports = {
     setExpAll,
     rmExpAll,
 
-    //ket exist
-    isKeyExist,
-
+    
     //user_like
     loadUserLike,
     addUserLike,
     delUserLike,
-
-    //AlreadyLike
-    isAlreadyLike,
 
     //post_like
     postLike,
@@ -469,7 +467,4 @@ module.exports = {
 
     //post_retweet
     postRetweet,
-
-    //AlreadyRetweet
-    isAlreadyRetweet,
 };
