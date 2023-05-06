@@ -42,10 +42,38 @@ submitPostButton.addEventListener("click", () => {
 });
 
 
+//render the replyText
+const replyModal = document.getElementById("replyModal");
+replyModal.addEventListener("show.bs.modal", (e) => {
+    const commentTarget = e.relatedTarget;
+    let postId = getPostIdFromElement(commentTarget);
+    
+    fetch(`/api/posts/${postId}`, {
+        method: 'GET'
+    })
+    .then((response) => {
+        return response.json();
+    })
+    .then((result) => {
+        console.log(result); // test
+    })
+})
 
+//replyTextarea button handler
+const replyTextarea = document.getElementById("replyTextarea");
+const submitReplyButton = document.getElementById("submitReplyButton");
+
+//enable the button if there are texts in the textarea
+replyTextarea.addEventListener("input", () => {
+    submitReplyButton.disabled = replyTextarea.value.trim() == '';
+});
+
+
+
+//button click handler
 const postsContainer = document.querySelector('.postsContainer');
 
-postsContainer.addEventListener("click", function(e) {
+postsContainer.addEventListener("click", (e) => {
 
     const likeTarget = e.target.closest(".likeButton");
 
@@ -130,9 +158,6 @@ postsContainer.addEventListener("click", function(e) {
 }, false);
 
 
-
-
-
 function getPostIdFromElement(element) {
     let isRoot = element.classList.contains('post');
     let rootElement = isRoot === true ? element : element.closest('.post');
@@ -145,10 +170,23 @@ function createPostHtml(result) {
 
     let fullName = userLoggedIn.firstName + " " + userLoggedIn.lastName;
 
-    let likeButtonActiveClass = result.like_people.includes(userLoggedIn.username) ? "active" : "";
-    let retweetButtonActiveClass = result.retweet_people.includes(userLoggedIn.username) ? "active" : "";
+    let isLiked = result.like_people.includes(userLoggedIn.username);
+    let likeButtonActiveClass =  isLiked === true ? "active" : "";
+    let isRetweeted = result.retweet_people.includes(userLoggedIn.username);
+    let retweetButtonActiveClass = isRetweeted === true ? "active" : "";
+
+    let retweetText = "";
+    if(isRetweeted === true) {
+        retweetText = `<span>
+                            <i class="fa-solid fa-retweet"></i>
+                            Retweeted by<a href=''>@${userLoggedIn.username}</a>
+                        </span>`
+    }
 
     return `<div class='post' data-id='${result.post_id}'>
+                <div class='postActionContainer'>
+                    ${retweetText}
+                </div>
                 <div class='mainContentContainer'>
                     <div class='userImageContainer'>
                         <img src='${userLoggedIn.profilePic}'>
@@ -156,7 +194,7 @@ function createPostHtml(result) {
                     <div class='postContentContainer'>
                         <div class='header'>
                             <a href='' class='displayName'>${fullName}</a>
-                            <span class='username'>@${userLoggedIn.username}</span>
+                            <span class='username'>@${result.postby}</span>
                             <span class='date'>${result.timestamp}</span>
                         </div>
                         <div class='postBody'>
@@ -164,7 +202,7 @@ function createPostHtml(result) {
                         </div>
                         <div class='postFooter'>
                             <div class='postButtonContainer'>
-                                <button>
+                                <button class='commentButton' data-bs-toggle="modal" data-bs-target="#replyModal">
                                 <i class="fa-regular fa-comment"></i> <!-- This is an icon -->
                                 </button>
                             </div>
