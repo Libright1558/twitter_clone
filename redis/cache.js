@@ -1,6 +1,7 @@
 const redis = require('redis');
 const client = redis.createClient();
 const controller = require("../controller.js");
+const utility = require("./utility.js");
 const moment = require('moment');
 
 client.on('error', err => console.log('Redis Client Error', err));
@@ -11,6 +12,7 @@ const getPost = async (username) => {
         await client.connect();
 
         let postRecords = await client.ZRANGE(username + "_post", 0, -1);
+        // if redis cache is empty, load data from database
         if(!postRecords.length) {
             const userPosts = await controller.fetchPost(username);
             await client.DEL(username + "_post_hashTable");
@@ -46,42 +48,12 @@ const getPost = async (username) => {
             }
 
             postRecords = await client.ZRANGE(username + "_post", 0, -1);
-        }// if redis cache is empty, load data from database
+        }
         else {
-
-            let isExist = await client.KEYS(username + "_pinned");
-
-            if(!isExist.length) {
-                const userPinned = controller.fetchPinned(username);
-                
-                const rowLength = userPinned.rows.length;
-                for(let i = 0; i < rowLength; i++) {
-                    await client.hSet(username + "_pinned", userPinned.rows[i].post_id, JSON.stringify(userPinned.rows[i].pinned));
-                }
-            }
-            
-            isExist = await client.KEYS(username + "_like_people");
-
-
-            if(!isExist.length) {
-                const userLikePeople = controller.fetchLikePeople(username);
-
-                const rowLength = userLikePeople.rows.length;
-                for(let i = 0; i < rowLength; i++) {
-                    await client.hSet(username + "_like_people", userLikePeople.rows[i].post_id, JSON.stringify(userLikePeople.rows[i].like_people));
-                }
-            }
-    
-            isExist = await client.KEYS(username + "_retweet_people");
-
-            if(!isExist.length) {
-                const userRetweetPeople = controller.fetchRetweetPeople(username);
-
-                const rowLength = userRetweetPeople.rows.length;
-                for(let i = 0; i < rowLength; i++) {
-                    await client.hSet(username + "_retweet_people", userRetweetPeople.rows[i].post_id, JSON.stringify(userRetweetPeople.rows[i].retweet_people));
-                }
-            }
+            utility.pinned(username, client, controller);
+            utility.likePeople(username, client, controller);
+            utility.retweetPeople(username, client, controller);
+            utility.postHashTable(username, client);
         }
         
         const recordsObj = postRecords.map(str => JSON.parse(str));
@@ -99,6 +71,8 @@ const getLikePeople = async (username, postId) => {
     try {
         await client.connect();
 
+        utility.likePeople(username, client, controller);
+
         const likePeopleArray = await client.hGet(username + "_like_people", postId);
 
         return likePeopleArray;
@@ -114,6 +88,8 @@ const getLikePeople = async (username, postId) => {
 const getRetweetPeople = async (username, postId) => {
     try {
         await client.connect();
+   
+        utility.retweetPeople(username, client, controller);
 
         const retweetPeopleArray = await client.hGet(username + "_retweet_people", postId);
 
@@ -130,6 +106,8 @@ const getRetweetPeople = async (username, postId) => {
 const getPinned = async (username, postId) => {
     try {
         await client.connect();
+  
+        utility.pinned(username, client, controller);
 
         const PinnedBoolean = await client.hGet(username + "_pinned", postId);
 
@@ -146,6 +124,9 @@ const getPinned = async (username, postId) => {
 const addPost = async (username, post) => {
     try {
         await client.connect();
+
+        //if post hashTable doesn't exist, create it
+        utility.postHashTable(username, client);
         
         let member = await client.ZRANGE(username + "_post", 0, 0);
         let first = 0;
@@ -214,6 +195,7 @@ const loadUserLike = async (username) => {
         await client.connect();
         
         let userLike = await client.ZRANGE(username + "_like", 0, -1);
+        // if redis cache is empty, load user_like from database
         if(!userLike.length) {
             const like = await controller.fetchUserLike(username);
             await client.DEL(username + "_like_hashTable");
@@ -228,7 +210,10 @@ const loadUserLike = async (username) => {
             }
             
             userLike = await client.ZRANGE(username + "_like", 0, -1);
-        }// if redis cache is empty, load user_like from database
+        }
+        else {
+            utility.likeHashTable(username, client);
+        }
 
         const result = userLike.map(str => JSON.parse(str));
         return result;
@@ -327,6 +312,7 @@ const loadUserRetweet = async (username) => {
         await client.connect();
         
         let userRetweet = await client.ZRANGE(username + "_retweet", 0, -1);
+        // if redis cache is empty, load user_retweet from database
         if(!userRetweet.length) {
             const retweet = await controller.fetchUserRetweet(username);
             await client.DEL(username + "_retweet_hashTable");
@@ -341,7 +327,7 @@ const loadUserRetweet = async (username) => {
             }
             
             userRetweet = await client.ZRANGE(username + "_retweet", 0, -1);
-        }// if redis cache is empty, load user_retweet from database
+        }
 
         const result = userRetweet.map(str => JSON.parse(str));
         return result;
