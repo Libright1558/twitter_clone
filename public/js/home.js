@@ -23,22 +23,22 @@ document.addEventListener("DOMContentLoaded", () => {
         let i = 0, j = 0;
         while(i < userPostsLength && j < userRetweetsLength) {
             if(results.userPosts[i].ts > results.userRetweets[j].retweet_ts) {
-                await renderPost(resultPost, results.userPosts[i], "post");
+                await renderPost(resultPost, results.userPosts[i], "post", postsContainer);
                 i++;
             }
             else {
-                await renderPost(resultPost, results.userRetweets[j], "retweet");
+                await renderPost(resultPost, results.userRetweets[j], "retweet", postsContainer);
                 j++;
             }
         }
 
         while(i < userPostsLength) {
-            await renderPost(resultPost, results.userPosts[i], "post");
+            await renderPost(resultPost, results.userPosts[i], "post", postsContainer);
             i++;
         }
 
         while(j < userRetweetsLength) {
-            await renderPost(resultPost, results.userRetweets[j], "retweet");
+            await renderPost(resultPost, results.userRetweets[j], "retweet", postsContainer);
             j++;
         }
     })
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     })
 });
 
-async function renderPost(resultPost, result, postType) {
+async function renderPost(resultPost, result, postType, element) {
     if(postType === "post") {
         resultPost.timestamp = result.ts;
     }
@@ -80,5 +80,5 @@ async function renderPost(resultPost, result, postType) {
     resultPost.retweet_people = JSON.parse(data.retweetPeople);
 
     let html = createPostHtml(resultPost);
-    postsContainer.insertAdjacentHTML("beforeend", html);
+    element.insertAdjacentHTML("beforeend", html);
 }
