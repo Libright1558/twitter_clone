@@ -2,7 +2,7 @@ const pinned = async (username, client, controller) => {
     let isExist = await client.KEYS(username + "_pinned");
 
     if(!isExist.length) {
-        const userPinned = controller.fetchPinned(username);
+        const userPinned = await controller.fetchPinned(username);
         
         const rowLength = userPinned.rows.length;
         for(let i = 0; i < rowLength; i++) {
@@ -15,7 +15,7 @@ const likePeople = async (username, client, controller) => {
     let isExist = await client.KEYS(username + "_like_people");
 
     if(!isExist.length) {
-        const userLikePeople = controller.fetchLikePeople(username);
+        const userLikePeople = await controller.fetchLikePeople(username);
 
         const rowLength = userLikePeople.rows.length;
         for(let i = 0; i < rowLength; i++) {
@@ -28,7 +28,7 @@ const retweetPeople = async (username, client, controller) => {
     let isExist = await client.KEYS(username + "_retweet_people");
 
     if(!isExist.length) {
-        const userRetweetPeople = controller.fetchRetweetPeople(username);
+        const userRetweetPeople = await controller.fetchRetweetPeople(username);
 
         const rowLength = userRetweetPeople.rows.length;
         for(let i = 0; i < rowLength; i++) {
