@@ -50,10 +50,10 @@ const getPost = async (username) => {
             postRecords = await client.ZRANGE(username + "_post", 0, -1);
         }
         else {
-            utility.pinned(username, client, controller);
-            utility.likePeople(username, client, controller);
-            utility.retweetPeople(username, client, controller);
-            utility.postHashTable(username, client);
+            await utility.pinned(username, client, controller);
+            await utility.likePeople(username, client, controller);
+            await utility.retweetPeople(username, client, controller);
+            await utility.postHashTable(username, client);
         }
         
         const recordsObj = postRecords.map(str => JSON.parse(str));
@@ -71,7 +71,7 @@ const getLikePeople = async (username, postId) => {
     try {
         await client.connect();
 
-        utility.likePeople(username, client, controller);
+        await utility.likePeople(username, client, controller);
 
         const likePeopleArray = await client.hGet(username + "_like_people", postId);
 
@@ -89,7 +89,7 @@ const getRetweetPeople = async (username, postId) => {
     try {
         await client.connect();
    
-        utility.retweetPeople(username, client, controller);
+        await utility.retweetPeople(username, client, controller);
 
         const retweetPeopleArray = await client.hGet(username + "_retweet_people", postId);
 
@@ -107,7 +107,7 @@ const getPinned = async (username, postId) => {
     try {
         await client.connect();
   
-        utility.pinned(username, client, controller);
+        await utility.pinned(username, client, controller);
 
         const PinnedBoolean = await client.hGet(username + "_pinned", postId);
 
@@ -126,7 +126,7 @@ const addPost = async (username, post) => {
         await client.connect();
 
         //if post hashTable doesn't exist, create it
-        utility.postHashTable(username, client);
+        await utility.postHashTable(username, client);
         
         let member = await client.ZRANGE(username + "_post", 0, 0);
         let first = 0;
@@ -212,7 +212,7 @@ const loadUserLike = async (username) => {
             userLike = await client.ZRANGE(username + "_like", 0, -1);
         }
         else {
-            utility.likeHashTable(username, client);
+            await utility.likeHashTable(username, client);
         }
 
         const result = userLike.map(str => JSON.parse(str));
