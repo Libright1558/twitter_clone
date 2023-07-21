@@ -60,24 +60,8 @@ async function renderPost(resultPost, result, postType, element) {
     resultPost.postData = result.content;
     resultPost.post_id = result.post_id;
     resultPost.postby = result.postby;
-
-    let obj = {
-        "postOwner": result.postby,
-        "postId": result.post_id,
-    }
-
-    let res = await fetch(`/api/posts/${result.post_id}/retweetAndLike`, {
-        body: JSON.stringify(obj),
-        method: 'POST',
-        headers: {
-            "Content-Type": "application/json"
-        }
-    })
-
-    let data = await res.json();
-
-    resultPost.like_people = JSON.parse(data.likePeople);
-    resultPost.retweet_people = JSON.parse(data.retweetPeople);
+    resultPost.like_people = result.like_people ? result.like_people : [];
+    resultPost.retweet_people = result.retweet_people ? result.retweet_people : [];
 
     let html = createPostHtml(resultPost);
     element.insertAdjacentHTML("beforeend", html);
