@@ -53,53 +53,44 @@ const postData = async (postData) => {
 }
 
 const fetchPost = async (username) => {
+
+    const client = await pool.connect();
+
     try {
-        const client = await pool.connect();
-        const result = await client.query(queries.fetchPost, [username]);
-        client.release();
+        await client.query('BEGIN');
+
+        await client.query(queries.LikeAndRetweet);
+        await client.query(queries.postRecords);
+
+        await client.query(queries.preFetchPost, [username]);
+        await client.query(queries.getPostDetail);
+        const result = await client.query(queries.fetchPost);
+
+        await client.query('COMMIT');
+
         return result;
     }
     catch(err) {
+        await client.query('ROLLBACK');
         console.log("controller fetchPost error", err);
     }
-}
-
-
-const fetchPinned = async (username) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.fetchPinned, [username]);
+    finally {
         client.release();
-        return result;
-    } 
-    catch (err) {
-        console.log("controller fetchPinned error", err);
     }
 }
 
-const fetchLikePeople = async (username) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.fetchLikePeople, [username]);
-        client.release();
-        return result;
-    } 
-    catch (err) {
-        console.log("controller fetchLikePeople error", err);
-    }
-}
-
-const fetchRetweetPeople = async (username) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.fetchRetweetPeople, [username]);
-        client.release();
-        return result;
-    } 
-    catch (err) {
-        console.log("controller fetchRetweetPeople error", err);
-    }
-}
+// return post_id
+// const fetchPinned = async (username) => {
+//     try {
+//         const client = await pool.connect();
+//         const result = await client.query(queries.fetchPinned, [username]);
+//         client.release();
+//         return result;
+//     } 
+//     catch (err) {
+//         console.log("controller fetchPinned error", err);
+//     }
+// }
 
 
 const newPostId = async (username) => {
@@ -114,49 +105,6 @@ const newPostId = async (username) => {
     }
 }
 
-const insertLikePeople = async (username, post_id) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.insertLikePeople, [username, post_id]);
-        client.release();
-    }
-    catch(err) {
-        console.log("controller insertLikePeople error", err);
-    }
-}
-
-const removeLikePeople = async (username, post_id) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.removeLikePeople, [username, post_id]);
-        client.release();
-    }
-    catch(err) {
-        console.log("controller removeLikePeople error", err);
-    }
-}
-
-const insertRetweetPeople = async (username, post_id) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.insertRetweetPeople, [username, post_id]);
-        client.release();
-    }
-    catch(err) {
-        console.log("controller insertRetweetPeople error", err);
-    }
-}
-
-const removeRetweetPeople = async (username, post_id) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.removeRetweetPeople, [username, post_id]);
-        client.release();
-    }
-    catch(err) {
-        console.log("controller removeRetweetPeople error", err);
-    }
-}
 
 //user_like
 const insertUserLike = async (username, post_id) => {
@@ -241,20 +189,9 @@ module.exports = {
 
     //post
     postData,
-
     fetchPost,
-    fetchPinned,
-    fetchLikePeople,
-    fetchRetweetPeople,
-
     newPostId,
-
-    insertLikePeople,
-    removeLikePeople,
-
-    insertRetweetPeople,
-    removeRetweetPeople,
-
+    
     //user_like
     insertUserLike,
     delUserLike,
