@@ -1,18 +1,25 @@
 //create temporary tables
 const LikeAndRetweet = 
-`CREATE TEMPORARY TABLE temp1 (
+`CREATE TEMPORARY TABLE IF NOT EXISTS temp1 (
     LikeNum INT,
     RetweetNum INT,
     post_id UUID
-) ON COMMIT DELETE ROWS`;
+) ON COMMIT DROP`;
 
 const postRecords = 
-`CREATE TEMPORARY TABLE temp2 (
+`CREATE TEMPORARY TABLE IF NOT EXISTS temp2 (
     post_id UUID,
     postby VARCHAR(50),
     content TEXT,
     ts TIMESTAMP
-) ON COMMIT DELETE ROWS`;
+) ON COMMIT DROP`;
+
+const isUserRetweetAndLike =
+`CREATE TEMPORARY TABLE IF NOT EXISTS temp3 (
+    isLiked BOOLEAN,
+    isRetweeted BOOLEAN,
+    post_id UUID
+) ON COMMIT DROP`;
 
 //temporary queries
 const preFetchPost = 
@@ -28,11 +35,28 @@ LEFT JOIN user_likes ul ON t2.post_id = ul.post_id
 LEFT JOIN user_retweets ur ON t2.post_id = ur.post_id
 GROUP BY t2.post_id`;
 
+const getUserRetweetAndLike =
+`INSERT INTO temp3 (post_id, isRetweeted, isLiked)
+SELECT t2.post_id, 
+(CASE
+    WHEN ur.username IS NULL THEN false
+    ELSE true
+END), 
+(CASE
+    WHEN ul.username IS NULL THEN false
+    ELSE true
+END)
+FROM temp2 t2
+LEFT JOIN user_likes ul ON t2.post_id = ul.post_id AND ul.username = $1
+LEFT JOIN user_retweets ur ON t2.post_id = ur.post_id AND ur.username = $1`;
+
+
 //post
 const fetchPost = 
-`SELECT postby, content, ts, t2.post_id, LikeNum, RetweetNum 
+`SELECT postby, content, ts, t2.post_id, LikeNum, RetweetNum, isRetweeted, isLiked
 FROM temp2 t2
 INNER JOIN temp1 t1 ON t2.post_id = t1.post_id
+INNER JOIN temp3 t3 ON t2.post_id = t3.post_id
 ORDER BY ts DESC`;
 
 //regist
@@ -53,6 +77,7 @@ const fetchUserLike = 'SELECT p.postby, p.content, p.ts, p.post_id, u.like_ts FR
 //user_retweet
 const userRetweet = 'INSERT INTO user_retweets(username, post_id) VALUES($1, $2)';
 const delUserRetweet = 'DELETE FROM user_retweets WHERE username = $1 AND post_id = $2';
+
 const fetchUserRetweet = 
 `SELECT p.postby, p.content, p.ts, p.post_id, u.retweet_ts 
 FROM post_records p 
@@ -64,10 +89,12 @@ module.exports = {
     //create temporary table
     LikeAndRetweet,
     postRecords,
+    isUserRetweetAndLike,
 
     //temporary queries
     preFetchPost,
     getPostDetail,
+    getUserRetweetAndLike,
 
     //post
     fetchPost,
