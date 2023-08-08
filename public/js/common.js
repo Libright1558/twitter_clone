@@ -170,9 +170,9 @@ function createPostHtml(result) {
 
     let fullName = userLoggedIn.firstName + " " + userLoggedIn.lastName;
 
-    let isLiked = result.like_people.includes(userLoggedIn.username);
+    let isLiked = result.isliked;
     let likeButtonActiveClass =  isLiked === true ? "active" : "";
-    let isRetweeted = result.retweet_people.includes(userLoggedIn.username);
+    let isRetweeted = result.isretweeted;
     let retweetButtonActiveClass = isRetweeted === true ? "active" : "";
 
     let retweetText = "";
@@ -209,13 +209,13 @@ function createPostHtml(result) {
                             <div class='postButtonContainer green'>
                                 <button class='retweetButton ${retweetButtonActiveClass}'>
                                 <i class="fa-solid fa-retweet"></i> <!-- This is an icon -->
-                                <span class='retweetNums'>${result.retweet_people.length || ""}</span>
+                                <span class='retweetNums'>${result.retweetnum || ""}</span>
                                 </button>
                             </div>
                             <div class='postButtonContainer red'>
                                 <button class='likeButton ${likeButtonActiveClass}'>
                                 <i class="fa-regular fa-heart"></i> <!-- This is an icon -->
-                                <span class='likeNums'>${result.like_people.length || ""}</span>
+                                <span class='likeNums'>${result.likenum || ""}</span>
                                 </button>
                             </div>
                         </div>
