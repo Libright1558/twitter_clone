@@ -61,9 +61,11 @@ const fetchPost = async (username) => {
 
         await client.query(queries.LikeAndRetweet);
         await client.query(queries.postRecords);
+        await client.query(queries.isUserRetweetAndLike);
 
         await client.query(queries.preFetchPost, [username]);
         await client.query(queries.getPostDetail);
+        await client.query(queries.getUserRetweetAndLike, [username]);
         const result = await client.query(queries.fetchPost);
 
         await client.query('COMMIT');
@@ -169,14 +171,19 @@ const delUserRetweet = async (username, post_id) => {
 }
 
 const fetchUserRetweet = async (username) => {
+
+    const client = await pool.connect();
+
     try {
-        const client = await pool.connect();
         const result = await client.query(queries.fetchUserRetweet, [username]);
-        client.release();
+        
         return result;
     }
     catch(err) {
         console.log("controller fetchUserRetweet error", err);
+    }
+    finally {
+        client.release();
     }
 }
 
