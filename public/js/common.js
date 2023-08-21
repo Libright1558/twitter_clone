@@ -106,10 +106,10 @@ postsContainer.addEventListener("click", (e) => {
                 num.innerHTML = result.like_nums || "";
 
                 if(result.isAlreadyLike === true) {
-                    likeTarget.classList.remove("active");
+                    likeTarget.classList.add("active");
                 }
                 else if(result.isAlreadyLike === false) {
-                    likeTarget.classList.add("active");
+                    likeTarget.classList.remove("active");
                 }
             })
         }
@@ -146,10 +146,10 @@ postsContainer.addEventListener("click", (e) => {
                 num.innerHTML = result.retweet_nums || "";
 
                 if(result.isAlreadyRetweet === true) {
-                    retweetTarget.classList.remove("active");
+                    retweetTarget.classList.add("active");
                 }
                 else if(result.isAlreadyRetweet === false) {
-                    retweetTarget.classList.add("active");
+                    retweetTarget.classList.remove("active");
                 }
             })
         }
