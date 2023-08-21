@@ -3,7 +3,6 @@ const app = express();
 const router = express.Router();
 const controller = require("../controller");
 const bcrypt = require('bcrypt');
-const redis_cache = require("../redis/cache");
 
 app.set("view engine", "pug");
 app.set("views", "views");
@@ -41,7 +40,6 @@ router.post("/", async (req, res, next) => {
                     'profilePic': user.rows[0].profilepic,
                     'user_id': user.rows[0].user_id,
                 };
-                await redis_cache.rmExpAll(req.session.user.username);
                 return res.redirect("/");
             }
             payload.errorMessage = "Login credentials incorrect.";
