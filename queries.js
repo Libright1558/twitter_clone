@@ -21,6 +21,18 @@ const isUserRetweetAndLike =
     post_id UUID
 ) ON COMMIT DROP`;
 
+const LikeNumTable = 
+`CREATE TEMPORARY TABLE IF NOT EXISTS temp4 (
+    LikeNum INT,
+    post_id UUID
+) ON COMMIT DROP`;
+
+const isLikedTable = 
+`CREATE TEMPORARY TABLE IF NOT EXISTS temp5 (
+    isLiked BOOLEAN,
+    post_id UUID
+) ON COMMIT DROP`;
+
 //temporary queries
 const preFetchPost = 
 `INSERT INTO temp2 (post_id, postby, content, ts)
@@ -56,8 +68,7 @@ const fetchPost =
 `SELECT postby, content, ts, t2.post_id, LikeNum, RetweetNum, isRetweeted, isLiked
 FROM temp2 t2
 INNER JOIN temp1 t1 ON t2.post_id = t1.post_id
-INNER JOIN temp3 t3 ON t2.post_id = t3.post_id
-ORDER BY ts DESC`;
+INNER JOIN temp3 t3 ON t2.post_id = t3.post_id`;
 
 //regist
 const regist = 'INSERT INTO user_records(firstname, lastname, username, email, password, profilepic) VALUES($1, $2, $3, $4, $5, $6)';
@@ -66,30 +77,52 @@ const findOne = 'SELECT * FROM user_records WHERE username = $1 OR email = $1';
 
 //insertPost
 const postData = 'INSERT INTO post_records(postby, content, ts) VALUES($1, $2, $3)';
-// const fetchPinned = 'SELECT post_id FROM post_records WHERE postby = $1 AND post_id IN (SELECT post_id FROM pinned_posts)';
 const newPostId = 'SELECT post_id FROM post_records WHERE postby = $1 ORDER BY ts DESC LIMIT 1';
 
 //user_like
-const userLike = 'INSERT INTO user_likes(username, post_id) VALUES($1, $2)';
-const delUserLike = 'DELETE FROM user_likes WHERE username = $1 AND post_id = $2';
-const fetchUserLike = 'SELECT p.postby, p.content, p.ts, p.post_id, u.like_ts FROM post_records AS p, user_likes AS u WHERE u.username = $1 AND p.post_id = u.post_id ORDER BY u.like_ts DESC';
+const like_or_dislike = `SELECT isLiked, likeNum FROM like_or_dislike($1, $2)`;
+
+const pre_LikeNum = 
+`WITH tempIdTable(post_id) AS (
+    SELECT unnest($1::UUID[])
+)
+INSERT INTO temp4 (post_id, LikeNum)
+SELECT ti.post_id, COUNT(ul.username)
+FROM tempIdTable ti
+LEFT JOIN user_likes ul ON ul.post_id = ti.post_id
+GROUP BY ti.post_id`;
+
+const pre_isLiked = 
+`WITH tempIdTable(post_id) AS (
+    SELECT unnest($1::UUID[])
+)
+INSERT INTO temp5 (post_id, isLiked)
+SELECT ti.post_id, 
+(
+CASE
+    WHEN ul.username IS NULL
+    THEN false
+    ELSE true
+END
+) FROM tempIdTable ti
+LEFT JOIN user_likes ul ON ul.post_id = ti.post_id AND ul.username = $2`;
+
+const fetchIsUserLikedAndLikeNum = 
+`SELECT isLiked, LikeNum
+FROM temp4 t4
+INNER JOIN temp5 t5 ON t4.post_id = t5.post_id`;
 
 //user_retweet
-const userRetweet = 'INSERT INTO user_retweets(username, post_id) VALUES($1, $2)';
-const delUserRetweet = 'DELETE FROM user_retweets WHERE username = $1 AND post_id = $2';
-
-const fetchUserRetweet = 
-`SELECT p.postby, p.content, p.ts, p.post_id, u.retweet_ts 
-FROM post_records p 
-INNER JOIN user_retweets u ON p.post_id = u.post_id
-WHERE u.username = $1 
-ORDER BY u.retweet_ts DESC`;
+// const userRetweet = 'INSERT INTO user_retweets(username, post_id) VALUES($1, $2)';
+// const delUserRetweet = 'DELETE FROM user_retweets WHERE username = $1 AND post_id = $2';
 
 module.exports = {
     //create temporary table
     LikeAndRetweet,
     postRecords,
     isUserRetweetAndLike,
+    LikeNumTable,
+    isLikedTable,
 
     //temporary queries
     preFetchPost,
@@ -109,12 +142,12 @@ module.exports = {
     newPostId,
 
     //user_like
-    userLike,
-    delUserLike,
-    fetchUserLike,
+    like_or_dislike,
+    pre_LikeNum,
+    pre_isLiked,
+    fetchIsUserLikedAndLikeNum,
 
     //user_retweet
-    userRetweet,
-    delUserRetweet,
-    fetchUserRetweet,
+    // userRetweet,
+    // delUserRetweet,
 };
