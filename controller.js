@@ -3,52 +3,60 @@ const queries = require("./queries");
 
 //regist
 const regist = async (param) => {
+    const client = await pool.connect();
     try {
-        const client = await pool.connect();
         const result = await client.query(queries.regist, param);
-        client.release();
         return result;
     }
     catch(err) {
         console.log("controller regist error", err);
     }
+    finally {
+        client.release();
+    }
 }
 
 const findDup = async (username, email) => {
+    const client = await pool.connect();
     try {
-        const client = await pool.connect();
         const result = await client.query(queries.findDup, [username, email]);
-        client.release();
         return result;
     }
     catch(err) {
         console.log("controller findDup error", err);
     }
+    finally {
+        client.release();
+    }
 }
 
 const findOne = async (username_or_email) => {
+    const client = await pool.connect();
     try {
-        const client = await pool.connect();
         const result = await client.query(queries.findOne, [username_or_email]);
-        client.release();
         return result;
     }
     catch(err) {
         console.log("controller findOne error", err);
+    }
+    finally {
+        client.release();
     }
 }
 
 
 //post
 const postData = async (postData) => {
+    const client = await pool.connect();
     try {
-        const client = await pool.connect();
         const result = await client.query(queries.postData, postData);
-        client.release();
         return result;
     }
     catch(err) {
         console.log("controller postData error", err);
+    }
+    finally {
+        client.release();
     }
 }
 
@@ -81,112 +89,62 @@ const fetchPost = async (username) => {
     }
 }
 
-// return post_id
-// const fetchPinned = async (username) => {
-//     try {
-//         const client = await pool.connect();
-//         const result = await client.query(queries.fetchPinned, [username]);
-//         client.release();
-//         return result;
-//     } 
-//     catch (err) {
-//         console.log("controller fetchPinned error", err);
-//     }
-// }
-
 
 const newPostId = async (username) => {
+    const client = await pool.connect();
     try {
-        const client = await pool.connect();
         const result = await client.query(queries.newPostId, [username]);
-        client.release();
         return result;
     }
     catch(err) {
         console.log("controller newPostId error", err);
-    }
-}
-
-
-//user_like
-const insertUserLike = async (username, post_id) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.userLike, [username, post_id]);
-        client.release();
-        return result;
-    }
-    catch(err) {
-        console.log("controller insertUserLike error", err);
-    }
-}
-
-const delUserLike = async (username, post_id) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.delUserLike, [username, post_id]);
-        client.release();
-        return result;
-    }
-    catch(err) {
-        console.log("controller delUserLike error", err);
-    }
-}
-
-const fetchUserLike = async (username) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.fetchUserLike, [username]);
-        client.release();
-        return result;
-    }
-    catch(err) {
-        console.log("controller fetchUserLike error", err);
-    }
-}
-
-//user_retweet
-const insertUserRetweet = async (username, post_id) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.userRetweet, [username, post_id]);
-        client.release();
-        return result;
-    }
-    catch(err) {
-        console.log("controller insertUserRetweet error", err);
-    }
-}
-
-const delUserRetweet = async (username, post_id) => {
-    try {
-        const client = await pool.connect();
-        const result = await client.query(queries.delUserRetweet, [username, post_id]);
-        client.release();
-        return result;
-    }
-    catch(err) {
-        console.log("controller delUserRetweet error", err);
-    }
-}
-
-const fetchUserRetweet = async (username) => {
-
-    const client = await pool.connect();
-
-    try {
-        const result = await client.query(queries.fetchUserRetweet, [username]);
-        
-        return result;
-    }
-    catch(err) {
-        console.log("controller fetchUserRetweet error", err);
     }
     finally {
         client.release();
     }
 }
 
+
+//user_like
+const like_or_dislike = async (post_id, username) => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(queries.like_or_dislike, [post_id, username]);
+        return result;
+    }
+    catch(err) {
+        console.log("controller like_or_dislike error", err);
+    }
+    finally {
+        client.release();
+    }
+}
+
+const fetchPostLikeDetail = async (post_id_array, username) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        await client.query(queries.LikeNumTable);
+        await client.query(queries.isLikedTable);
+        await client.query(queries.pre_LikeNum, [post_id_array]);
+        await client.query(queries.pre_isLiked, [post_id_array, username]);
+        const result = await client.query(queries.fetchIsUserLikedAndLikeNum);
+
+        await client.query('COMMIT');
+
+        return result;
+    } 
+    catch(err) {
+        await client.query('ROLLBACK');
+        console.log("controller fetchPostLikeDetail error", err);
+    }
+    finally {
+        client.release();
+    }
+}
+
+//user_retweet
 
 module.exports = {
     //regist
@@ -200,12 +158,8 @@ module.exports = {
     newPostId,
     
     //user_like
-    insertUserLike,
-    delUserLike,
-    fetchUserLike,
+    like_or_dislike,
+    fetchPostLikeDetail,
     
     //user_retweet
-    insertUserRetweet,
-    delUserRetweet,
-    fetchUserRetweet,
 };
