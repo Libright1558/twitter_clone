@@ -50,20 +50,6 @@ const getPost = async (username) => {
 }
 
 //set expire
-const setExp = async (key, times) => {
-    try {
-        await client.connect();
-
-        client.expire(key, times);
-    }
-    catch(err) {
-        console.log("redis setExp error", err);
-    }
-    finally {
-        await client.quit();
-    }
-}
-
 const setExpNX = async (key, times) => {
     try {
         await client.connect();
@@ -77,31 +63,6 @@ const setExpNX = async (key, times) => {
         await client.quit();
     }
 }
-
-//user_retweet
-// const loadUserRetweet = async (username) => {
-//     try {
-//         await client.connect();
-        
-//         let userRetweet = await client.ZRANGE(username + "_retweet", 0, -1);
-        
-//         if(userRetweet.length) {    
-//             const recordsObj = userRetweet.map(str => JSON.parse(str));
-
-//             const result = await utility.fetchPostDetail(recordsObj, client, username);
-
-//             return result;
-//         }
-//     }
-//     catch(err) {
-//         console.log("redis loadUserRetweet error", err);
-//     }
-//     finally {
-//         await client.quit();
-//     }
-// }
-
-
 
 //writeBack #############################################################################################
 const postWriteBack = async (username, userPosts) => {
@@ -210,7 +171,6 @@ module.exports = {
     getPost,
     
     //remove expire and set expire
-    setExp,
     setExpNX,
     
     //delete key
