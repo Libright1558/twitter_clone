@@ -82,13 +82,8 @@ postsContainer.addEventListener("click", (e) => {
         let postId = getPostIdFromElement(likeTarget);
         if(postId !== undefined) {
 
-            const postContentContainer = e.target.closest(".postContentContainer");
-            const username = postContentContainer.querySelector('.username').innerHTML;
-            const usernameMinusAT = username.slice(1);
-
             let updateLike = {
                 "postId": postId,
-                "postOwner": usernameMinusAT,
             }
 
             fetch(`api/posts/${postId}/like`, {
@@ -122,13 +117,8 @@ postsContainer.addEventListener("click", (e) => {
         let postId = getPostIdFromElement(retweetTarget);
         if(postId !== undefined) {
 
-            const postContentContainer = e.target.closest(".postContentContainer");
-            const username = postContentContainer.querySelector('.username').innerHTML;
-            const usernameMinusAT = username.slice(1);
-
             let updateRetweet = {
                 "postId": postId,
-                "postOwner": usernameMinusAT,
             }
 
             fetch(`api/posts/${postId}/retweet`, {
