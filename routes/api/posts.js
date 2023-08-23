@@ -146,8 +146,10 @@ router.put("/:id/like", express.json(), async (req, res, next) => {
             "like_nums": response.rows[0].likenum
         }
 
-        setTimeout(() => {redis_cache.delKey("likenum")}, 5000);
-        setTimeout(() => {redis_cache.delKey(username + "_isliked")}, 5000);
+        setTimeout(async () => {
+            await redis_cache.delKey("likenum");
+            await redis_cache.delKey(username + "_isliked");
+        }, 5000);
 
         res.status(200).send(JSON.stringify(obj));
     }
@@ -157,55 +159,32 @@ router.put("/:id/like", express.json(), async (req, res, next) => {
     }
 })
 
-// router.put("/:id/retweet", express.json(), async (req, res, next) => {
-//     try {
-//         const postId = req.body.postId;
-//         const username = req.session.user.username;
-//         const owner = req.body.postOwner;
+router.put("/:id/retweet", express.json(), async (req, res, next) => {
+    try {
+        const postId = req.body.postId;
+        const username = req.session.user.username;
 
+        await redis_cache.delKey("retweetnum");
+        await redis_cache.delKey(username + "_isretweeted");
 
-//         let retweetPeopleArray = await redis_cache.getRetweetPeople(username, postId);
-//         retweetPeopleArray = JSON.parse(retweetPeopleArray);
-        
-//         let isAlreadyRetweet = true;
-//         if(retweetPeopleArray === null || retweetPeopleArray.includes(username) === false) {
-//             isAlreadyRetweet = false;
-//         }
-        
+        const response = await controller.retweet_or_disretweet(postId, username);
 
-//         if(isAlreadyRetweet === false) {
-//             controller.insertUserRetweet(username, postId)
-//             .catch(error => {
-//                 console.log(error);
-//                 res.sendStatus(400);
-//             });
-            
-//             await redis_cache.addUserRetweet(username, owner, postId);
-//             await controller.insertRetweetPeople(username, postId);     
-//         }
-//         else if(isAlreadyRetweet === true) {
-//             controller.delUserRetweet(username, postId)
-//             .catch(error => {
-//                 console.log(error);
-//                 res.sendStatus(400);
-//             });
-            
-//             await redis_cache.delUserRetweet(username, postId);
-//             await controller.removeRetweetPeople(username, postId);
-//         }
-//         const retweet_nums = await redis_cache.postRetweet(owner, username, postId);
+        const obj = {
+            "isAlreadyRetweet": response.rows[0].isretweeted,
+            "retweet_nums": response.rows[0].retweetnum,
+        }
 
-//         const obj = {
-//             "isAlreadyRetweet": isAlreadyRetweet,
-//             "retweet_nums": retweet_nums,
-//         }
+        setTimeout(async () => {
+            await redis_cache.delKey("retweetnum");
+            await redis_cache.delKey(username + "_isretweeted");
+        }, 5000);
 
-//         res.status(200).send(JSON.stringify(obj));
-//     }
-//     catch(err) {
-//         console.log("posts.js router.put_retweet error", err);
-//         return;
-//     }
-// })
+        res.status(200).send(JSON.stringify(obj));
+    }
+    catch(err) {
+        console.log("posts.js router.put_retweet error", err);
+        return;
+    }
+})
 
 module.exports = router;
