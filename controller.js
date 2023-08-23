@@ -145,6 +145,43 @@ const fetchPostLikeDetail = async (post_id_array, username) => {
 }
 
 //user_retweet
+const retweet_or_disretweet = async (post_id, username) => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(queries.retweet_or_disretweet, [post_id, username]);
+        return result;
+    } 
+    catch (err) {
+        console.log("controller retweet_or_disretweet error", err);
+    }
+    finally {
+        client.release();
+    }
+}
+
+const fetchPostRetweetDetail = async (post_id_array, username) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        await client.query(queries.RetweetNumTable);
+        await client.query(queries.isRetweetedTable);
+        await client.query(queries.pre_RetweetNum, [post_id_array]);
+        await client.query(queries.pre_isRetweeted, [post_id_array, username]);
+        const result = await client.query(queries.fetchIsUserRetweetedAndRetweetNum);
+
+        await client.query('COMMIT');
+
+        return result;
+    } 
+    catch (err) {
+        await client.query('ROLLBACK');
+        console.log("controller fetchPostRetweetDetail error", err);
+    }
+    finally {
+        client.release();
+    }
+}
 
 module.exports = {
     //regist
@@ -162,4 +199,6 @@ module.exports = {
     fetchPostLikeDetail,
     
     //user_retweet
+    retweet_or_disretweet,
+    fetchPostRetweetDetail,
 };
