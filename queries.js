@@ -33,6 +33,18 @@ const isLikedTable =
     post_id UUID
 ) ON COMMIT DROP`;
 
+const RetweetNumTable = 
+`CREATE TEMPORARY TABLE IF NOT EXISTS temp6 (
+    RetweetNum INT,
+    post_id UUID
+) ON COMMIT DROP`;
+
+const isRetweetedTable = 
+`CREATE TEMPORARY TABLE IF NOT EXISTS temp7 (
+    isRetweeted BOOLEAN,
+    post_id UUID
+) ON COMMIT DROP`;
+
 //temporary queries
 const preFetchPost = 
 `INSERT INTO temp2 (post_id, postby, content, ts)
@@ -108,13 +120,42 @@ END
 LEFT JOIN user_likes ul ON ul.post_id = ti.post_id AND ul.username = $2`;
 
 const fetchIsUserLikedAndLikeNum = 
-`SELECT isLiked, LikeNum
+`SELECT t4.post_id, isLiked, LikeNum
 FROM temp4 t4
 INNER JOIN temp5 t5 ON t4.post_id = t5.post_id`;
 
 //user_retweet
-// const userRetweet = 'INSERT INTO user_retweets(username, post_id) VALUES($1, $2)';
-// const delUserRetweet = 'DELETE FROM user_retweets WHERE username = $1 AND post_id = $2';
+const retweet_or_disretweet = `SELECT isRetweeted, retweetNum FROM retweet_or_disretweet($1, $2)`;
+
+const pre_RetweetNum = 
+`WITH tempIdTable(post_id) AS (
+    SELECT unnest($1::UUID[])
+)
+INSERT INTO temp6 (post_id, RetweetNum)
+SELECT ti.post_id, COUNT(ur.username)
+FROM tempIdTable ti
+LEFT JOIN user_retweets ur ON ur.post_id = ti.post_id
+GROUP BY ti.post_id`;
+
+const pre_isRetweeted = 
+`WITH tempIdTable(post_id) AS (
+    SELECT unnest($1::UUID[])
+)
+INSERT INTO temp7 (post_id, isRetweeted)
+SELECT ti.post_id, 
+(
+CASE
+    WHEN ur.username IS NULL
+    THEN false
+    ELSE true
+END
+) FROM tempIdTable ti
+LEFT JOIN user_retweets ur ON ur.post_id = ti.post_id AND ur.username = $2`;
+
+const fetchIsUserRetweetedAndRetweetNum = 
+`SELECT t6.post_id, isRetweeted, RetweetNum
+FROM temp6 t6
+INNER JOIN temp7 t7 ON t6.post_id = t7.post_id`;
 
 module.exports = {
     //create temporary table
@@ -123,6 +164,8 @@ module.exports = {
     isUserRetweetAndLike,
     LikeNumTable,
     isLikedTable,
+    RetweetNumTable,
+    isRetweetedTable,
 
     //temporary queries
     preFetchPost,
@@ -148,6 +191,8 @@ module.exports = {
     fetchIsUserLikedAndLikeNum,
 
     //user_retweet
-    // userRetweet,
-    // delUserRetweet,
+    retweet_or_disretweet,
+    pre_RetweetNum,
+    pre_isRetweeted,
+    fetchIsUserRetweetedAndRetweetNum,
 };
