@@ -12,17 +12,26 @@ const fetchPostDetail = async (recordsObj, recordsObjIdArray, client, username) 
         .exec();
 
     // if likenum or isliked doesn't exist, fetching it from database. then writing it back to redis
-    if(!likenum || !isliked) {
+    if(likenum[0] === null || isliked[0] === undefined) {
         const response = await controller.fetchPostLikeDetail(recordsObjIdArray, username);
         const likeNumObj = {};
         const isLikeObj = {};
+        const tempObj = {};
+
+        const responseLength = response.rows.length;
+        for(let i = 0; i < responseLength; i++) {
+            tempObj[response.rows[i].post_id] = {
+                "likenum": response.rows[i].likenum,
+                "isliked": response.rows[i].isliked
+            };
+        }// construct postid:value pairs
 
         for(let i = 0; i < recordLen; i++) {
-            likeNumObj[recordsObjIdArray[i]] = response.rows[i].likenum;
-            isLikeObj[recordsObjIdArray[i]] = response.rows[i].isliked;
+            likeNumObj[recordsObjIdArray[i]] = JSON.stringify(tempObj[recordsObjIdArray[i]].likenum);
+            isLikeObj[recordsObjIdArray[i]] = JSON.stringify(tempObj[recordsObjIdArray[i]].isliked);
 
-            recordsObj[i].likenum = JSON.parse(response.rows[i].likenum);
-            recordsObj[i].isliked = JSON.parse(response.rows[i].isliked);
+            recordsObj[i].likenum = JSON.parse(tempObj[recordsObjIdArray[i]].likenum);
+            recordsObj[i].isliked = JSON.parse(tempObj[recordsObjIdArray[i]].isliked);
         }
 
         await client
@@ -33,12 +42,37 @@ const fetchPostDetail = async (recordsObj, recordsObjIdArray, client, username) 
     }
 
     // if retweetnum or isretweeted doesn't exist, fetching it from database. then writing it back to redis
-    if(!retweetnum || !isretweeted) {
+    if(retweetnum[0] === null || isretweeted[0] === undefined) {
+        const response = await controller.fetchPostRetweetDetail(recordsObjIdArray, username);
+        const retweetNumObj = {};
+        const isRetweetObj = {};
+        const tempObj = {};
 
+        const responseLength = response.rows.length;
+        for(let i = 0; i < responseLength; i++) {
+            tempObj[response.rows[i].post_id] = {
+                "retweetnum": response.rows[i].retweetnum,
+                "isretweeted": response.rows[i].isretweeted
+            };
+        }// construct postid:value pairs 
+
+        for(let i = 0; i < recordLen; i++) {
+            retweetNumObj[recordsObjIdArray[i]] = JSON.stringify(tempObj[recordsObjIdArray[i]].retweetnum);
+            isRetweetObj[recordsObjIdArray[i]] = JSON.stringify(tempObj[recordsObjIdArray[i]].isretweeted);
+
+            recordsObj[i].retweetnum = JSON.parse(tempObj[recordsObjIdArray[i]].retweetnum);
+            recordsObj[i].isretweeted = JSON.parse(tempObj[recordsObjIdArray[i]].isretweeted);
+        }
+
+        await client
+        .multi()
+        .HSET("retweetnum", retweetNumObj)
+        .HSET(username + "_isretweeted", isRetweetObj)
+        .exec();
     }
     
     for(let i = 0; i < recordLen; i++) {
-        if((!likenum || !isliked) && (!retweetnum || !isretweeted)) {
+        if((likenum === null || isliked === undefined) && (retweetnum === null || isretweeted === undefined)) {
             break;
         }
         if(likenum && isliked) {
