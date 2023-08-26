@@ -1,92 +1,142 @@
 const controller = require("../controller");
+const moment = require('moment');
 
-const fetchPostDetail = async (recordsObj, recordsObjIdArray, client, username) => {
-    const recordLen = recordsObj.length;
+const fetchPostHelper = async (idArray, client, username) => {
 
-    const [likenum, retweetnum, isliked, isretweeted] = await client
+    if(idArray.length) {
+        const [posts, likenum, retweetnum, isliked, isretweeted] = await client
         .multi()
-        .HMGET("likenum", recordsObjIdArray)
-        .HMGET("retweetnum", recordsObjIdArray)
-        .HMGET(username + "_isliked", recordsObjIdArray)
-        .HMGET(username + "_isretweeted", recordsObjIdArray)
+        .HMGET("community_posts", idArray)
+        .HMGET("likenum", idArray)
+        .HMGET("retweetnum", idArray)
+        .HMGET(username + "_isliked", idArray)
+        .HMGET(username + "_isretweeted", idArray)
         .exec();
 
-    // if likenum or isliked doesn't exist, fetching it from database. then writing it back to redis
-    if(likenum[0] === null || isliked[0] === undefined) {
-        const response = await controller.fetchPostLikeDetail(recordsObjIdArray, username);
-        const likeNumObj = {};
-        const isLikeObj = {};
-        const tempObj = {};
+        if(posts.length) {
+            let recordsObj = posts.map(str => JSON.parse(str));
+            const recordLen = recordsObj.length;
+            
+            if(recordsObj.includes(null)) {
+                recordsObj = await checkIfPostDataIsComplete(idArray, recordsObj, username, client);
+            }// to check if some posts is not in redis cache
 
-        const responseLength = response.rows.length;
-        for(let i = 0; i < responseLength; i++) {
-            tempObj[response.rows[i].post_id] = {
-                "likenum": response.rows[i].likenum,
-                "isliked": response.rows[i].isliked
-            };
-        }// construct postid:value pairs
+            recordsObj.sort(function(a, b) {
+                if(a.ts > b.ts) {
+                    return -1;
+                }
 
-        for(let i = 0; i < recordLen; i++) {
-            likeNumObj[recordsObjIdArray[i]] = JSON.stringify(tempObj[recordsObjIdArray[i]].likenum);
-            isLikeObj[recordsObjIdArray[i]] = JSON.stringify(tempObj[recordsObjIdArray[i]].isliked);
+                if(a.ts < b.ts) {
+                    return 1;
+                }
+                return 0;
+            }); // descendent sorting
 
-            recordsObj[i].likenum = JSON.parse(tempObj[recordsObjIdArray[i]].likenum);
-            recordsObj[i].isliked = JSON.parse(tempObj[recordsObjIdArray[i]].isliked);
+            const sortedIdArray = recordsObj.map((obj) => obj.post_id);
+
+            // if likenum or isliked doesn't exist, fetching it from database. then writing it back to redis
+            if(likenum.includes(null) || isliked.includes(undefined)) {
+                const response = await controller.fetchPostLikeDetail(sortedIdArray, username);
+                const likeNumObj = {};
+                const isLikeObj = {};
+                const tempObj = {};
+    
+                const responseLength = response.rows.length;
+                for(let i = 0; i < responseLength; i++) {
+                    tempObj[response.rows[i].post_id] = {
+                        "likenum": response.rows[i].likenum,
+                        "isliked": response.rows[i].isliked
+                    };
+                }// construct postid:value pairs
+    
+                for(let i = 0; i < recordLen; i++) {
+                    likeNumObj[sortedIdArray[i]] = JSON.stringify(tempObj[sortedIdArray[i]].likenum);
+                    isLikeObj[sortedIdArray[i]] = JSON.stringify(tempObj[sortedIdArray[i]].isliked);
+    
+                    recordsObj[i].likenum = JSON.parse(tempObj[sortedIdArray[i]].likenum);
+                    recordsObj[i].isliked = JSON.parse(tempObj[sortedIdArray[i]].isliked);
+                }
+    
+                await client
+                .multi()
+                .HSET("likenum", likeNumObj)
+                .HSET(username + "_isliked", isLikeObj)
+                .exec();
+            }
+            // if retweetnum or isretweeted doesn't exist, fetching it from database. then writing it back to redis
+            if(retweetnum.includes(null) || isretweeted.includes(undefined)) {
+                const response = await controller.fetchPostRetweetDetail(sortedIdArray, username);
+                const retweetNumObj = {};
+                const isRetweetObj = {};
+                const tempObj = {};
+    
+                const responseLength = response.rows.length;
+                for(let i = 0; i < responseLength; i++) {
+                    tempObj[response.rows[i].post_id] = {
+                        "retweetnum": response.rows[i].retweetnum,
+                        "isretweeted": response.rows[i].isretweeted
+                    };
+                }// construct postid:value pairs 
+    
+                for(let i = 0; i < recordLen; i++) {
+                    retweetNumObj[sortedIdArray[i]] = JSON.stringify(tempObj[sortedIdArray[i]].retweetnum);
+                    isRetweetObj[sortedIdArray[i]] = JSON.stringify(tempObj[sortedIdArray[i]].isretweeted);
+    
+                    recordsObj[i].retweetnum = JSON.parse(tempObj[sortedIdArray[i]].retweetnum);
+                    recordsObj[i].isretweeted = JSON.parse(tempObj[sortedIdArray[i]].isretweeted);
+                }
+    
+                await client
+                .multi()
+                .HSET("retweetnum", retweetNumObj)
+                .HSET(username + "_isretweeted", isRetweetObj)
+                .exec();
+            }
+            
+            for(let i = 0; i < recordLen; i++) {
+                if((likenum.includes(null) || isliked.includes(undefined)) && 
+                (retweetnum.includes(null) || isretweeted.includes(undefined))) {
+                    break;
+                }
+                if(likenum && isliked) {
+                    recordsObj[i].likenum = JSON.parse(likenum[i]);
+                    recordsObj[i].isliked = JSON.parse(isliked[i]);
+                }
+    
+                if(retweetnum && isretweeted) {
+                    recordsObj[i].retweetnum = JSON.parse(retweetnum[i]);
+                    recordsObj[i].isretweeted = JSON.parse(isretweeted[i]);
+                }
+            }
+
+            return recordsObj;
         }
+    }
+}
 
-        await client
-        .multi()
-        .HSET("likenum", likeNumObj)
-        .HSET(username + "_isliked", isLikeObj)
-        .exec();
+const checkIfPostDataIsComplete = async (idArray, recordsObj, username, client) => {
+    const idArrayLength = idArray.length;
+    const nullIdArray = [];
+    for(let i = 0; i < idArrayLength; i++) {
+        if(recordsObj[i] === null) {
+            nullIdArray.push(idArray[i]);
+        }
     }
 
-    // if retweetnum or isretweeted doesn't exist, fetching it from database. then writing it back to redis
-    if(retweetnum[0] === null || isretweeted[0] === undefined) {
-        const response = await controller.fetchPostRetweetDetail(recordsObjIdArray, username);
-        const retweetNumObj = {};
-        const isRetweetObj = {};
-        const tempObj = {};
+    if(nullIdArray.length) {
+        const response = await controller.fetchLostPost(nullIdArray, username);
+
+        await postWriteBackHelper(response, username, client);
 
         const responseLength = response.rows.length;
+        const result = recordsObj.filter((x) => x !== null).map((x) => x);
         for(let i = 0; i < responseLength; i++) {
-            tempObj[response.rows[i].post_id] = {
-                "retweetnum": response.rows[i].retweetnum,
-                "isretweeted": response.rows[i].isretweeted
-            };
-        }// construct postid:value pairs 
-
-        for(let i = 0; i < recordLen; i++) {
-            retweetNumObj[recordsObjIdArray[i]] = JSON.stringify(tempObj[recordsObjIdArray[i]].retweetnum);
-            isRetweetObj[recordsObjIdArray[i]] = JSON.stringify(tempObj[recordsObjIdArray[i]].isretweeted);
-
-            recordsObj[i].retweetnum = JSON.parse(tempObj[recordsObjIdArray[i]].retweetnum);
-            recordsObj[i].isretweeted = JSON.parse(tempObj[recordsObjIdArray[i]].isretweeted);
+            response.rows[i].ts = moment(response.rows[i].ts).format("YYYY-MM-DD HH:mm:ss");
+            result.push(response.rows[i]);
         }
 
-        await client
-        .multi()
-        .HSET("retweetnum", retweetNumObj)
-        .HSET(username + "_isretweeted", isRetweetObj)
-        .exec();
+        return result;
     }
-    
-    for(let i = 0; i < recordLen; i++) {
-        if((likenum === null || isliked === undefined) && (retweetnum === null || isretweeted === undefined)) {
-            break;
-        }
-        if(likenum && isliked) {
-            recordsObj[i].likenum = JSON.parse(likenum[i]);
-            recordsObj[i].isliked = JSON.parse(isliked[i]);
-        }
-
-        if(retweetnum && isretweeted) {
-            recordsObj[i].retweetnum = JSON.parse(retweetnum[i]);
-            recordsObj[i].isretweeted = JSON.parse(isretweeted[i]);
-        }
-    }    
-    
-    return recordsObj;
 }
 
 const setCacheExp = async (username, redis_cache) => {
@@ -96,7 +146,60 @@ const setCacheExp = async (username, redis_cache) => {
     await redis_cache.setExpNX(username + "_isliked", process.env.exp_time);
 }
 
+const postDetailWriteBack = async (objLike, objRetweet, client) => {
+    await client.HSET("likenum", objLike);
+    await client.HSET("retweetnum", objRetweet);
+}
+
+const isUserLikeAndRetweetWriteBack = async (username, objLike, objRetweet, client) => {
+    await client.HSET(username + "_isliked", objLike);
+    await client.HSET(username + "_isretweeted", objRetweet);
+}
+
+const postWriteBackHelper = async (userPosts, username, client) => {
+    const data = {
+        "postby": null,
+        "content": null,
+        "ts": null,
+        "post_id": null,
+    }
+    
+    const rowLength = userPosts.rows.length;
+    const postFieldValueObj = {};
+    const postIdArray = [];
+    const likeNumObj = {};
+    const retweetNumObj = {};
+    const isLikeObj = {};
+    const isRetweetObj = {};
+
+
+    for(let i = 0; i < rowLength; i++) {
+        data.postby = userPosts.rows[i].postby;
+        data.content = userPosts.rows[i].content;
+        data.ts = moment(userPosts.rows[i].ts).format("YYYY-MM-DD HH:mm:ss");
+        data.post_id = userPosts.rows[i].post_id;
+
+        
+        postFieldValueObj[userPosts.rows[i].post_id] = JSON.stringify(data);
+
+        postIdArray.push(userPosts.rows[i].post_id);
+        likeNumObj[userPosts.rows[i].post_id] = JSON.stringify(userPosts.rows[i].likenum);
+        retweetNumObj[userPosts.rows[i].post_id] = JSON.stringify(userPosts.rows[i].retweetnum);
+        isLikeObj[userPosts.rows[i].post_id] = JSON.stringify(userPosts.rows[i].isliked);
+        isRetweetObj[userPosts.rows[i].post_id] = JSON.stringify(userPosts.rows[i].isretweeted);
+    }
+    await client.HSET("community_posts", postFieldValueObj);
+    await client.SADD(username + "_postid", postIdArray);
+    await postDetailWriteBack(likeNumObj, retweetNumObj, client);
+    await isUserLikeAndRetweetWriteBack(username, isLikeObj, isRetweetObj, client);
+}
+
+
 module.exports = {
-    fetchPostDetail,
+    fetchPostHelper,
     setCacheExp,
+    checkIfPostDataIsComplete,
+    postDetailWriteBack,
+    isUserLikeAndRetweetWriteBack,
+    postWriteBackHelper,
 }
