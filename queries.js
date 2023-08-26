@@ -82,6 +82,15 @@ FROM temp2 t2
 INNER JOIN temp1 t1 ON t2.post_id = t1.post_id
 INNER JOIN temp3 t3 ON t2.post_id = t3.post_id`;
 
+const pre_fetchLostPost = 
+`WITH tempIdTable(post_id) AS (
+    SELECT unnest($1::UUID[])
+)
+INSERT INTO temp2 (post_id, postby, content, ts)
+SELECT ti.post_id, postby, content, ts
+FROM tempIdTable ti 
+INNER JOIN post_records pr ON ti.post_id = pr.post_id`;
+
 //regist
 const regist = 'INSERT INTO user_records(firstname, lastname, username, email, password, profilepic) VALUES($1, $2, $3, $4, $5, $6)';
 const findDup = 'SELECT username, email FROM user_records WHERE username = $1 OR email = $2';
@@ -174,6 +183,7 @@ module.exports = {
 
     //post
     fetchPost,
+    pre_fetchLostPost,
 
     //regist
     regist,
