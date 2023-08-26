@@ -89,6 +89,34 @@ const fetchPost = async (username) => {
     }
 }
 
+const fetchLostPost = async (post_id_array, username) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        await client.query(queries.LikeAndRetweet);
+        await client.query(queries.postRecords);
+        await client.query(queries.isUserRetweetAndLike);
+
+        await client.query(queries.pre_fetchLostPost, [post_id_array]);
+        await client.query(queries.getPostDetail);
+        await client.query(queries.getUserRetweetAndLike, [username]);
+        const result = await client.query(queries.fetchPost);
+
+        await client.query('COMMIT');
+
+        return result;
+    } 
+    catch(err) {
+        await client.query('ROLLBACK');
+        console.log("controller fetchLostPost error", err);
+    }
+    finally {
+        client.release();
+    }
+}
+
 
 const newPostId = async (username) => {
     const client = await pool.connect();
@@ -192,6 +220,7 @@ module.exports = {
     //post
     postData,
     fetchPost,
+    fetchLostPost,
     newPostId,
     
     //user_like
