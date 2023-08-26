@@ -1,7 +1,6 @@
 const redis = require('redis');
 const client = redis.createClient();
 const utility = require("./utility.js");
-const moment = require('moment');
 
 client.on('error', err => console.log('Redis Client Error', err));
 
@@ -13,33 +12,9 @@ const getPost = async (username) => {
     try {
         const idArray = await client.SMEMBERS(username + "_postid");
 
-        if(idArray.length) {
-            const posts = await client.HMGET("community_posts", idArray);
-         
-            if(posts.length) {
-                const recordsObj = posts.map(str => JSON.parse(str));
-                recordsObj.sort(function(a, b) {
-                    if(a.ts > b.ts) {
-                        return -1;
-                    }
-    
-                    if(a.ts < b.ts) {
-                        return 1;
-                    }
-                    return 0;
-                }); // descendent sorting
-    
-                const recordsObjLength = recordsObj.length;
-                const recordsObjIdArray = [];
-                for(let i = 0; i < recordsObjLength; i++) {
-                    recordsObjIdArray.push(recordsObj[i].post_id);
-                }
-    
-                const result = await utility.fetchPostDetail(recordsObj, recordsObjIdArray, client, username);
-    
-                return result;
-            }    
-        }
+        const result = await utility.fetchPostHelper(idArray, client, username);
+
+        return result;
     }
     catch(err) {
         console.log("redis fetch error", err);
@@ -69,41 +44,7 @@ const postWriteBack = async (username, userPosts) => {
     try {
         await client.connect();
 
-        const data = {
-            "postby": null,
-            "content": null,
-            "ts": null,
-            "post_id": null,
-        }
-        
-        const rowLength = userPosts.rows.length;
-        const postFieldValueObj = {};
-        const postIdArray = [];
-        const likeNumObj = {};
-        const retweetNumObj = {};
-        const isLikeObj = {};
-        const isRetweetObj = {};
-
-
-        for(let i = 0; i < rowLength; i++) {
-            data.postby = userPosts.rows[i].postby;
-            data.content = userPosts.rows[i].content;
-            data.ts = moment(userPosts.rows[i].ts).format("YYYY-MM-DD HH:mm:ss");
-            data.post_id = userPosts.rows[i].post_id;
-
-            
-            postFieldValueObj[userPosts.rows[i].post_id] = JSON.stringify(data);
-
-            postIdArray.push(userPosts.rows[i].post_id);
-            likeNumObj[userPosts.rows[i].post_id] = JSON.stringify(userPosts.rows[i].likenum);
-            retweetNumObj[userPosts.rows[i].post_id] = JSON.stringify(userPosts.rows[i].retweetnum);
-            isLikeObj[userPosts.rows[i].post_id] = JSON.stringify(userPosts.rows[i].isliked);
-            isRetweetObj[userPosts.rows[i].post_id] = JSON.stringify(userPosts.rows[i].isretweeted);
-        }
-        await client.HSET("community_posts", postFieldValueObj);
-        await client.SADD(username + "_postid", postIdArray);
-        await postDetailWriteBack(likeNumObj, retweetNumObj);
-        await isUserLikeAndRetweetWriteBack(username, isLikeObj, isRetweetObj);
+        await utility.postWriteBackHelper(userPosts, username, client);
     } 
     catch (err) {
         console.log("redis postWriteBack error", err);
@@ -136,15 +77,6 @@ const postWriteBack = async (username, userPosts) => {
 //     }
 // }
 
-const postDetailWriteBack = async (objLike, objRetweet) => {
-    await client.HSET("likenum", objLike);
-    await client.HSET("retweetnum", objRetweet);
-}
-
-const isUserLikeAndRetweetWriteBack = async (username, objLike, objRetweet) => {
-    await client.HSET(username + "_isliked", objLike);
-    await client.HSET(username + "_isretweeted", objRetweet);
-}
 
 
 //delete key
@@ -179,6 +111,4 @@ module.exports = {
     //writeBack
     postWriteBack,
     // userRetweetWriteBack,
-    postDetailWriteBack,
-    isUserLikeAndRetweetWriteBack,
 };
