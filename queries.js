@@ -77,10 +77,12 @@ LEFT JOIN user_retweets ur ON t2.post_id = ur.post_id AND ur.username = $1`;
 
 //post
 const fetchPost = 
-`SELECT postby, content, ts, t2.post_id, LikeNum, RetweetNum, isRetweeted, isLiked
+`SELECT t2.postby, content, ts, t2.post_id, LikeNum, RetweetNum, isRetweeted, isLiked, 
+firstname, lastname, profilepic
 FROM temp2 t2
 INNER JOIN temp1 t1 ON t2.post_id = t1.post_id
-INNER JOIN temp3 t3 ON t2.post_id = t3.post_id`;
+INNER JOIN temp3 t3 ON t2.post_id = t3.post_id
+INNER JOIN user_records urs ON t2.postby = urs.username`;
 
 const pre_fetchLostPost = 
 `WITH tempIdTable(post_id) AS (
@@ -97,8 +99,7 @@ const findDup = 'SELECT username, email FROM user_records WHERE username = $1 OR
 const findOne = 'SELECT * FROM user_records WHERE username = $1 OR email = $1';
 
 //insertPost
-const postData = 'INSERT INTO post_records(postby, content, ts) VALUES($1, $2, $3)';
-const newPostId = 'SELECT post_id FROM post_records WHERE postby = $1 ORDER BY ts DESC LIMIT 1';
+const postData = 'INSERT INTO post_records(postby, content, ts) VALUES($1, $2, $3) RETURNING post_id';
 
 //user_like
 const like_or_dislike = `SELECT isLiked, likeNum FROM like_or_dislike($1, $2)`;
@@ -166,6 +167,9 @@ const fetchIsUserRetweetedAndRetweetNum =
 FROM temp6 t6
 INNER JOIN temp7 t7 ON t6.post_id = t7.post_id`;
 
+//delete post
+const deletePost = `DELETE FROM post_records WHERE post_id = $1`;
+
 module.exports = {
     //create temporary table
     LikeAndRetweet,
@@ -192,7 +196,6 @@ module.exports = {
 
     //insertPost
     postData,
-    newPostId,
 
     //user_like
     like_or_dislike,
@@ -205,4 +208,7 @@ module.exports = {
     pre_RetweetNum,
     pre_isRetweeted,
     fetchIsUserRetweetedAndRetweetNum,
+
+    //deletePost
+    deletePost,
 };
