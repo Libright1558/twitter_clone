@@ -118,21 +118,6 @@ const fetchLostPost = async (post_id_array, username) => {
 }
 
 
-const newPostId = async (username) => {
-    const client = await pool.connect();
-    try {
-        const result = await client.query(queries.newPostId, [username]);
-        return result;
-    }
-    catch(err) {
-        console.log("controller newPostId error", err);
-    }
-    finally {
-        client.release();
-    }
-}
-
-
 //user_like
 const like_or_dislike = async (post_id, username) => {
     const client = await pool.connect();
@@ -211,6 +196,20 @@ const fetchPostRetweetDetail = async (post_id_array, username) => {
     }
 }
 
+//deletePost
+const deletePost = async (post_id) => {
+    const client = await pool.connect();
+    try {
+        await client.query(queries.deletePost, [post_id]);
+    } 
+    catch(err) {
+        console.log("controller deletePost error", err);
+    }
+    finally {
+        client.release();
+    }
+}
+
 module.exports = {
     //regist
     regist,
@@ -221,7 +220,6 @@ module.exports = {
     postData,
     fetchPost,
     fetchLostPost,
-    newPostId,
     
     //user_like
     like_or_dislike,
@@ -230,4 +228,7 @@ module.exports = {
     //user_retweet
     retweet_or_disretweet,
     fetchPostRetweetDetail,
+
+    //deletePost
+    deletePost,
 };
