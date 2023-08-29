@@ -28,8 +28,8 @@ submitPostButton.addEventListener("click", () => {
             const postsContainer = document.querySelector('.postsContainer');
             postsContainer.insertAdjacentHTML("afterbegin", html);
         })
-        .catch(error => {
-            console.log(error);
+        .catch((error) => {
+            console.log("postTextError", error);
         })
         .finally(() => {
             document.getElementById("postTextarea").value = "";
@@ -107,6 +107,9 @@ postsContainer.addEventListener("click", (e) => {
                     likeTarget.classList.remove("active");
                 }
             })
+            .catch((err) => {
+                console.log("likePostError", err);
+            })
         }
     }
 
@@ -142,6 +145,37 @@ postsContainer.addEventListener("click", (e) => {
                     retweetTarget.classList.remove("active");
                 }
             })
+            .catch((err) => {
+                console.log("retweetPostError", err);
+            })
+        }
+    }
+
+    // delete post button click handler
+    const deletePostTarget = e.target.closest(".deletePostButton");
+
+    if(deletePostTarget) {
+        let postId = getPostIdFromElement(deletePostTarget);
+
+        if(postId !== undefined) {
+
+            let deletePost = {
+                "postId": postId,
+            }
+
+            let rootElement = getRootFromElement(deletePostTarget);
+            rootElement.remove();
+
+            fetch(`api/posts/${postId}/delete`, {
+                method: "DELETE",
+                body: JSON.stringify(deletePost),
+                headers: {
+                    "Content-Type": "application/json"
+                },
+            })
+            .catch((err) => {
+                console.log("deletePostError", err)
+            })
         }
     }
 
@@ -156,9 +190,16 @@ function getPostIdFromElement(element) {
     return postId;
 }
 
+function getRootFromElement(element) {
+    let isRoot = element.classList.contains('post');
+    let rootElement = isRoot === true ? element : element.closest('.post');
+
+    return rootElement;
+}
+
 function createPostHtml(result) {
 
-    let fullName = userLoggedIn.firstName + " " + userLoggedIn.lastName;
+    let fullName = result.firstName + " " + result.lastName;
 
     let isLiked = result.isliked;
     let likeButtonActiveClass =  isLiked === true ? "active" : "";
@@ -173,14 +214,25 @@ function createPostHtml(result) {
                         </span>`
     }
 
+    let deletePostButton = ""
+    let hasAuthorization = true;
+    if(hasAuthorization === true) {
+        deletePostButton = `<div class='deletePostContainer'>
+                                <button class='deletePostButton'>
+                                <i class="fa-regular fa-trash-can"></i> <!-- This is an icon -->
+                                </button>
+                            </div>`
+    }
+
     return `<div class='post' data-id='${result.post_id}'>
                 <div class='postActionContainer'>
                     ${retweetText}
                 </div>
                 <div class='mainContentContainer'>
                     <div class='userImageContainer'>
-                        <img src='${userLoggedIn.profilePic}'>
+                        <img src='${result.profilePic}'>
                     </div>
+                    ${deletePostButton}
                     <div class='postContentContainer'>
                         <div class='header'>
                             <a href='' class='displayName'>${fullName}</a>
