@@ -146,6 +146,7 @@ h1 {
 .mainContentContainer {
     flex: 1;
     display: flex;
+    position:relative;
 }
 
 .postContentContainer {
@@ -217,4 +218,14 @@ h1 {
     color: var(--greyText);
     margin-bottom: 5px;
     text-decoration: none;
+}
+
+.deletePostContainer {
+    position:absolute;
+    right: 0;
+}
+
+.deletePostContainer button:hover {
+    color: var(--red);
+    background-color: var(--background_red);
 }
