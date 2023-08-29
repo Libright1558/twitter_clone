@@ -26,9 +26,10 @@ const getPost = async (username) => {
 
 //set expire
 const setExpNX = async (key, times) => {
-    try {
-        await client.connect();
 
+    await client.connect();
+
+    try {
         client.expire(key, times, 'NX');
     }
     catch(err) {
@@ -41,9 +42,10 @@ const setExpNX = async (key, times) => {
 
 //writeBack #############################################################################################
 const postWriteBack = async (username, userPosts) => {
-    try {
-        await client.connect();
 
+    await client.connect();
+
+    try {
         await utility.postWriteBackHelper(userPosts, username, client);
     } 
     catch (err) {
@@ -81,9 +83,10 @@ const postWriteBack = async (username, userPosts) => {
 
 //delete key
 const delKey = async (key) => {
-    try {
-        await client.connect();
 
+    await client.connect();
+
+    try {
         await client.DEL(key);
     } 
     catch (err) {
@@ -94,6 +97,20 @@ const delKey = async (key) => {
     }
 }
 
+const delField = async (key, field) => {
+
+    await client.connect();
+
+    try {
+        await client.HDEL(key, field);
+    } 
+    catch (err) {
+        console.log("redis delField error", err);
+    }
+    finally {
+        await client.quit();
+    }
+}
 //user comment
 
 
@@ -107,6 +124,7 @@ module.exports = {
     
     //delete key
     delKey,
+    delField,
 
     //writeBack
     postWriteBack,
