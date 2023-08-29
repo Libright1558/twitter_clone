@@ -9,6 +9,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const postsContainer = document.querySelector('.postsContainer');
 
         let resultPost = {
+            "firstName": null,
+            "lastName": null,
+            "profilePic": null,
             "timestamp": null,
             "postData": null,
             "postby": null,
@@ -50,7 +53,9 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function renderPost(resultPost, result, element) {
-    
+    resultPost.firstName = result.firstname
+    resultPost.lastName = result.lastname
+    resultPost.profilePic = result.profilepic
     resultPost.timestamp = result.ts;
     resultPost.postData = result.content;
     resultPost.post_id = result.post_id;
