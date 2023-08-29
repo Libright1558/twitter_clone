@@ -86,49 +86,46 @@ router.get("/:id", (req, res, next) => {
     
 })
 
-// router.post("/", express.json(), async (req, res, next) => {
-//     try {
-//         if(!(req.body.content)) {
-//             console.log("Content param can not send with request");
-//             return res.sendStatus(400);
-//         }
-//         req.body.content = req.body.content.replace(/[\u00A0-\u9999<>\&]/gim, (i) => `&#${i.codePointAt(0)};`);// HTML escape
-//         const time = moment().local().format('YYYY-MM-DD HH:mm:ss');
-//         const postData = [req.session.user.username, req.body.content, time];
-
-//         const username = req.session.user.username;
-
-//         const deleteKeys = async () => {
-//             await redis_cache.delKey(username + "_post");
-//             await redis_cache.delKey(username + "_post_hashTable");
-//             await redis_cache.delKey(username + "_pinned");
-//             await redis_cache.delKey(username + "_like_people");
-//             await redis_cache.delKey(username + "_retweet_people");
-//         }
-        
-//         await deleteKeys();
-//         await controller.postData(postData);
-//         setTimeout(async () => await deleteKeys(), process.env.timeout);
-       
-//         const content = req.body.content;
+router.post("/", express.json(), async (req, res, next) => {
+    try {
+        if(!(req.body.content)) {
+            console.log("Content param can not send with request");
+            return res.sendStatus(400);
+        }
+        const username = req.session.user.username;
+        const content = req.body.content;
+        const time = moment().local().format('YYYY-MM-DD HH:mm:ss');
+        const postData = [username, content, time];
     
-//         const postId = await controller.newPostId(username);
+        await redis_cache.delKey(username + "_postid");
 
-//         const deliver = {
-//             "postData": content, 
-//             "timestamp": time,
-//             "post_id": postId,
-//             "like_people": [],
-//             "retweet_people": [],
-//         };
+        const result = await controller.postData(postData);
+        
+        setTimeout(async () => {
+            await redis_cache.delKey(username + "_postid");
+        }, 5000);
+    
+        const deliver = {
+            "postData": content, 
+            "timestamp": time,
+            "post_id": result.rows[0].post_id,
+            "likenum": 0,
+            "isliked": false,
+            "retweetnum": 0,
+            "isretweeted": false,
+            "postby": username,
+            "firstName": req.session.user.firstName,
+            "lastName": req.session.user.lastName,
+            "profilePic": req.session.user.profilePic,
+        };
 
-//         res.status(201).send(JSON.stringify(deliver));
-//     }
-//     catch(err) {
-//         console.log("posts.js router.post error", err);
-//         return;
-//     }
-// })
+        res.status(201).send(JSON.stringify(deliver));
+    }
+    catch(err) {
+        console.log("posts.js router.post error", err);
+        return;
+    }
+})
 
 //like_or_dislike a post
 router.put("/:id/like", express.json(), async (req, res, next) => {
@@ -136,8 +133,8 @@ router.put("/:id/like", express.json(), async (req, res, next) => {
         const postId = req.body.postId;
         const username = req.session.user.username;
 
-        await redis_cache.delKey("likenum");
-        await redis_cache.delKey(username + "_isliked");
+        await redis_cache.delField("likenum", postId);
+        await redis_cache.delField(username + "_isliked", postId);
 
         const response = await controller.like_or_dislike(postId, username);
         
@@ -147,8 +144,8 @@ router.put("/:id/like", express.json(), async (req, res, next) => {
         }
 
         setTimeout(async () => {
-            await redis_cache.delKey("likenum");
-            await redis_cache.delKey(username + "_isliked");
+            await redis_cache.delField("likenum", postId);
+            await redis_cache.delField(username + "_isliked", postId);
         }, 5000);
 
         res.status(200).send(JSON.stringify(obj));
@@ -164,8 +161,8 @@ router.put("/:id/retweet", express.json(), async (req, res, next) => {
         const postId = req.body.postId;
         const username = req.session.user.username;
 
-        await redis_cache.delKey("retweetnum");
-        await redis_cache.delKey(username + "_isretweeted");
+        await redis_cache.delField("retweetnum", postId);
+        await redis_cache.delField(username + "_isretweeted", postId);
 
         const response = await controller.retweet_or_disretweet(postId, username);
 
@@ -175,14 +172,34 @@ router.put("/:id/retweet", express.json(), async (req, res, next) => {
         }
 
         setTimeout(async () => {
-            await redis_cache.delKey("retweetnum");
-            await redis_cache.delKey(username + "_isretweeted");
+            await redis_cache.delField("retweetnum", postId);
+            await redis_cache.delField(username + "_isretweeted", postId);
         }, 5000);
 
         res.status(200).send(JSON.stringify(obj));
     }
     catch(err) {
         console.log("posts.js router.put_retweet error", err);
+        return;
+    }
+})
+
+router.delete("/:id/delete", express.json(), async (req, res, next) => {
+    try {
+        const postId = req.body.postId;
+
+        await redis_cache.delField("community_posts", postId);
+
+        await controller.deletePost(postId);
+
+        setTimeout(async () => {
+            await redis_cache.delField("community_posts", postId);
+        }, 5000);
+
+        return;
+    } 
+    catch(err) {
+        console.log("posts.js router.delete error", err);
         return;
     }
 })
