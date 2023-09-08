@@ -1,11 +1,19 @@
+import fetchNewAccessToken from "./library/getNewAccessToken.js";
+import common from "./common.js";
+
 document.addEventListener("DOMContentLoaded", () => {
     fetch("/api/posts", {
+        credentials: "include",
         method: 'GET'
     })
     .then((response) => {
         return response.json();
     })
     .then(async (results) => {
+        if(results.message === 'jwt expired') {
+            await fetchNewAccessToken();
+        }
+
         const postsContainer = document.querySelector('.postsContainer');
 
         let resultPost = {
@@ -65,6 +73,6 @@ async function renderPost(resultPost, result, element) {
     resultPost.isretweeted = result.isretweeted;
     resultPost.isliked = result.isliked;
 
-    let html = createPostHtml(resultPost);
+    let html = common.createPostHtml(resultPost);
     element.insertAdjacentHTML("beforeend", html);
 }
