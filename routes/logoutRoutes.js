@@ -1,15 +1,8 @@
-const express = require('express');
-const app = express();
+import express from 'express';
 const router = express.Router();
-require('dotenv').config();
+import logoutController from "../controller/logoutController.js";
 
-router.get("/", (req, res, next) => {
-    if(req.session) {
-        const username = req.session.user.username;
-        req.session.destroy(() => {
-            res.redirect("/login");
-        })
-    }
-})
+router.route("/")
+    .get(logoutController.logout)
 
-module.exports = router;
+export default router;
