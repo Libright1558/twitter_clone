@@ -96,7 +96,9 @@ INNER JOIN post_records pr ON ti.post_id = pr.post_id`;
 //regist
 const regist = 'INSERT INTO user_records(firstname, lastname, username, email, password, profilepic) VALUES($1, $2, $3, $4, $5, $6)';
 const findDup = 'SELECT username, email FROM user_records WHERE username = $1 OR email = $2';
-const findOne = 'SELECT * FROM user_records WHERE username = $1 OR email = $1';
+const findOne = 'SELECT username, password FROM user_records WHERE username = $1 OR email = $1';
+const personalData = 
+`SELECT firstname, lastname, username, email, profilepic FROM user_records WHERE username = $1 OR email = $1`
 
 //insertPost
 const postData = 'INSERT INTO post_records(postby, content, ts) VALUES($1, $2, $3) RETURNING post_id';
@@ -170,7 +172,7 @@ INNER JOIN temp7 t7 ON t6.post_id = t7.post_id`;
 //delete post
 const deletePost = `DELETE FROM post_records WHERE post_id = $1`;
 
-module.exports = {
+export default {
     //create temporary table
     LikeAndRetweet,
     postRecords,
@@ -193,6 +195,7 @@ module.exports = {
     regist,
     findDup,
     findOne,
+    personalData,
 
     //insertPost
     postData,
