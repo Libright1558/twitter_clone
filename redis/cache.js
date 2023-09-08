@@ -1,8 +1,40 @@
-const redis = require('redis');
+import redis from 'redis';
 const client = redis.createClient();
-const utility = require("./utility.js");
+import utility from "./utility.js";
 
 client.on('error', err => console.log('Redis Client Error', err));
+
+//personal data ###################################################################
+const fetchPersonalData = async (username) => {
+    await client.connect();
+
+    try {
+        const result = await client.HGET("personalData", username);
+
+        return result;
+    }
+    catch(err) {
+        console.log("redis fetchPersonalData error", err);
+    }
+    finally {
+        await client.quit();
+    }
+
+}
+
+const writePersonalData = async (username, personalData) => {
+    await client.connect();
+
+    try {
+        await client.HSET("personalData", username, JSON.stringify(personalData));
+    }
+    catch(err) {
+        console.log("redis writePersonalData error", err);
+    }
+    finally {
+        await client.quit();
+    } 
+}
 
 //post ############################################################################
 const getPost = async (username) => {
@@ -115,7 +147,11 @@ const delField = async (key, field) => {
 
 
 
-module.exports = {
+export default {
+    //personalData
+    fetchPersonalData,
+    writePersonalData,
+
     //post
     getPost,
     
