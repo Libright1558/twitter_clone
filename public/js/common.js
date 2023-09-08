@@ -1,3 +1,5 @@
+import fetchNewAccessToken from "./library/getNewAccessToken.js";
+
 const Textarea = document.getElementById("postTextarea");
 const submitPostButton = document.getElementById("submitPostButton");
 
@@ -14,6 +16,7 @@ submitPostButton.addEventListener("click", () => {
             "content": value
         }
         fetch("/api/posts", {
+            credentials: "include",
             body: JSON.stringify(postText),
             method: 'POST',
             headers: {
@@ -23,7 +26,11 @@ submitPostButton.addEventListener("click", () => {
         .then(response => {
             return response.json();
         })
-        .then(result => {
+        .then(async (result) => {
+            if(result.message === 'jwt expired') {
+                await fetchNewAccessToken(); // if access token expired, fetch the new one
+            }
+
             var html = createPostHtml(result);
             const postsContainer = document.querySelector('.postsContainer');
             postsContainer.insertAdjacentHTML("afterbegin", html);
@@ -87,6 +94,7 @@ postsContainer.addEventListener("click", (e) => {
             }
 
             fetch(`api/posts/${postId}/like`, {
+                credentials: "include",
                 method: "PUT",
                 body: JSON.stringify(updateLike),
                 headers: {
@@ -96,7 +104,11 @@ postsContainer.addEventListener("click", (e) => {
             .then((response) => {
                 return response.json();
             })
-            .then((result) => {
+            .then(async (result) => {
+                if(result.message === 'jwt expired') {
+                    await fetchNewAccessToken(); // if access token expired, fetch the new one    
+                }
+
                 let num = likeTarget.querySelector('.likeNums');
                 num.innerHTML = result.like_nums || "";
 
@@ -125,6 +137,7 @@ postsContainer.addEventListener("click", (e) => {
             }
 
             fetch(`api/posts/${postId}/retweet`, {
+                credentials: "include",
                 method: "PUT",
                 body: JSON.stringify(updateRetweet),
                 headers: {
@@ -134,7 +147,11 @@ postsContainer.addEventListener("click", (e) => {
             .then((response) => {
                 return response.json();
             })
-            .then((result) => {
+            .then(async (result) => {
+                if(result.message === 'jwt expired') {
+                    await fetchNewAccessToken(); // if access token expired, fetch the new one    
+                }
+
                 let num = retweetTarget.querySelector('.retweetNums');
                 num.innerHTML = result.retweet_nums || "";
 
@@ -167,11 +184,20 @@ postsContainer.addEventListener("click", (e) => {
             rootElement.remove();
 
             fetch(`api/posts/${postId}/delete`, {
+                credentials: "include",
                 method: "DELETE",
                 body: JSON.stringify(deletePost),
                 headers: {
                     "Content-Type": "application/json"
                 },
+            })
+            .then((response) => {
+                return response.json();
+            })
+            .then(async (result) => {
+                if(result.message === 'jwt expired') {
+                    await fetchNewAccessToken(); // if access token expired, fetch the new one
+                }
             })
             .catch((err) => {
                 console.log("deletePostError", err)
@@ -265,3 +291,7 @@ function createPostHtml(result) {
                 </div>
             </div>`;   
 };
+
+export default {
+    createPostHtml,
+}
