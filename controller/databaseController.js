@@ -1,5 +1,5 @@
-const pool = require("../database");
-const queries = require("../queries");
+import pool from "../database/database.js";
+import queries from "../database/queries.js";
 
 //regist
 const regist = async (param) => {
@@ -44,6 +44,19 @@ const findOne = async (username_or_email) => {
     }
 }
 
+const fetchPersonalData = async (username_or_email) => {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(queries.personalData, [username_or_email]);
+        return result;
+    }
+    catch(err) {
+        console.log("controller fetchPersonalData error", err);
+    }
+    finally {
+        client.release();
+    }
+}
 
 //post
 const postData = async (postData) => {
@@ -210,11 +223,12 @@ const deletePost = async (post_id) => {
     }
 }
 
-module.exports = {
+export default {
     //regist
     regist,
     findDup,
     findOne,
+    fetchPersonalData,
 
     //post
     postData,
