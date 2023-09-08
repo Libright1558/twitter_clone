@@ -1,5 +1,5 @@
-const pool = require("./database");
-const queries = require("./queries");
+const pool = require("../database");
+const queries = require("../queries");
 
 //regist
 const regist = async (param) => {
