@@ -1,12 +1,13 @@
-const express = require('express');
+import express from 'express';
 const app = express();
-const middleware = require('./middleware');
-const path = require('path');
-const session = require('express-session');
-require('dotenv').config();
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+import 'dotenv/config';
+import verifyJWT from "./middleware/verifyJWT.js";
+import cookieParser from 'cookie-parser';
 const port = process.env.port;
-
-
 
 const server = app.listen(port, () => console.log("server listening on port " + port));
 
@@ -14,39 +15,25 @@ app.set("view engine", "pug");
 app.set("views", "views");
 
 app.use(express.urlencoded({extended: false}));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(join(__dirname, "public")));
+app.use(cookieParser());
 
-// Use the session middleware
-app.use(session({
-    secret: require('crypto').randomBytes(64).toString('hex'),
-    resave: false,
-    saveUninitialized: false,
-    cookie:{
-        httpOnly: true,
-        sameSite: 'lax',
-    }
-}));
 
 //Routes
-const loginRoute = require('./routes/loginRoutes');
-const registerRoute = require('./routes/registerRoutes');
-const logoutRoute = require('./routes/logoutRoutes');
+import loginRoute from './routes/loginRoutes.js';
+import registerRoute from './routes/registerRoutes.js';
+import logoutRoute from './routes/logoutRoutes.js';
+import refreshRoute from './routes/refreshTokenRoutes.js';
+import root from './routes/root.js';
 
-//API Routes
-const postsApiRoute = require('./routes/api/posts');
+
+import postsApiRoute from './routes/api/posts.js'; //API Routes
 
 app.use("/login", loginRoute);
 app.use("/register", registerRoute);
 app.use("/logout", logoutRoute);
+app.use("/refresh", refreshRoute);
+app.use("/", root);
 
+app.use(verifyJWT);
 app.use("/api/posts", postsApiRoute);
-
-app.get("/", middleware.requireLogin, (req, res, next) => {
-
-    var payload = {
-        pageTitle: "Home",
-        UserloggedIn: req.session.user,
-        UserloggedInJs: JSON.stringify(req.session.user),
-    }
-    res.status(200).render("home", payload);
-})
