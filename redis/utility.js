@@ -1,5 +1,5 @@
-const controller = require("../controller");
-const moment = require('moment');
+import controller from "../controller/databaseController.js";
+import moment from 'moment';
 
 const fetchPostHelper = async (idArray, client, username) => {
     try {
@@ -278,7 +278,7 @@ const postWriteBackHelper = async (userPosts, username, client) => {
 }
 
 
-module.exports = {
+export default {
     fetchPostHelper,
     setCacheExp,
     postDetailWriteBack,
