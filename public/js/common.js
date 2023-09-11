@@ -1,3 +1,4 @@
+import fetchRetry from "./library/fetchRetry.js";
 import fetchNewAccessToken from "./library/getNewAccessToken.js";
 
 const Textarea = document.getElementById("postTextarea");
@@ -15,38 +16,34 @@ submitPostButton.addEventListener("click", () => {
         let postText = {
             "content": value
         }
-        fetch("/api/posts", {
+        fetchRetry("/api/posts", 500, 2, {
             credentials: "include",
             body: JSON.stringify(postText),
             method: 'POST',
             headers: {
                 "Content-Type": "application/json"
             }
-        })
-        .then(response => {
-            return response.json();
-        })
-        .then(async (result) => {
-            if(result.message === 'jwt expired') {
-                await fetchNewAccessToken(); // if access token expired, fetch the new one
-            }
-
-            var html = createPostHtml(result);
-            const postsContainer = document.querySelector('.postsContainer');
-            postsContainer.insertAdjacentHTML("afterbegin", html);
-        })
-        .catch((error) => {
-            console.log("postTextError", error);
-        })
-        .finally(() => {
-            document.getElementById("postTextarea").value = "";
-            document.getElementById("submitPostButton").disabled = true;
-        });
+        }, postNewTexts);
     }
     catch(e) {
         console.log("Content param can not send with request", e);
     }
+    finally {
+        document.getElementById("postTextarea").value = "";
+        document.getElementById("submitPostButton").disabled = true;
+    }
 });
+
+async function postNewTexts(result) {
+    if(result.message === 'jwt expired') {
+        await fetchNewAccessToken(); // if access token expired, fetch the new one
+        throw new Error('token expired!');
+    }
+
+    var html = createPostHtml(result);
+    const postsContainer = document.querySelector('.postsContainer');
+    postsContainer.insertAdjacentHTML("afterbegin", html);
+}
 
 
 //render the replyText
@@ -93,35 +90,14 @@ postsContainer.addEventListener("click", (e) => {
                 "postId": postId,
             }
 
-            fetch(`api/posts/${postId}/like`, {
+            fetch(`api/posts/${postId}/like`, 500, 2, {
                 credentials: "include",
                 method: "PUT",
                 body: JSON.stringify(updateLike),
                 headers: {
                     "Content-Type": "application/json"
                 },
-            })
-            .then((response) => {
-                return response.json();
-            })
-            .then(async (result) => {
-                if(result.message === 'jwt expired') {
-                    await fetchNewAccessToken(); // if access token expired, fetch the new one    
-                }
-
-                let num = likeTarget.querySelector('.likeNums');
-                num.innerHTML = result.like_nums || "";
-
-                if(result.isAlreadyLike === true) {
-                    likeTarget.classList.add("active");
-                }
-                else if(result.isAlreadyLike === false) {
-                    likeTarget.classList.remove("active");
-                }
-            })
-            .catch((err) => {
-                console.log("likePostError", err);
-            })
+            }, fetchLikeNum)
         }
     }
 
@@ -136,35 +112,14 @@ postsContainer.addEventListener("click", (e) => {
                 "postId": postId,
             }
 
-            fetch(`api/posts/${postId}/retweet`, {
+            fetchRetry(`api/posts/${postId}/retweet`, 500, 2, {
                 credentials: "include",
                 method: "PUT",
                 body: JSON.stringify(updateRetweet),
                 headers: {
                     "Content-Type": "application/json"
                 },
-            })
-            .then((response) => {
-                return response.json();
-            })
-            .then(async (result) => {
-                if(result.message === 'jwt expired') {
-                    await fetchNewAccessToken(); // if access token expired, fetch the new one    
-                }
-
-                let num = retweetTarget.querySelector('.retweetNums');
-                num.innerHTML = result.retweet_nums || "";
-
-                if(result.isAlreadyRetweet === true) {
-                    retweetTarget.classList.add("active");
-                }
-                else if(result.isAlreadyRetweet === false) {
-                    retweetTarget.classList.remove("active");
-                }
-            })
-            .catch((err) => {
-                console.log("retweetPostError", err);
-            })
+            }, fetchRetweetNum)
         }
     }
 
@@ -183,29 +138,56 @@ postsContainer.addEventListener("click", (e) => {
             let rootElement = getRootFromElement(deletePostTarget);
             rootElement.remove();
 
-            fetch(`api/posts/${postId}/delete`, {
+            fetchRetry(`api/posts/${postId}/delete`, 500, 2, {
                 credentials: "include",
                 method: "DELETE",
                 body: JSON.stringify(deletePost),
                 headers: {
                     "Content-Type": "application/json"
                 },
-            })
-            .then((response) => {
-                return response.json();
-            })
-            .then(async (result) => {
-                if(result.message === 'jwt expired') {
-                    await fetchNewAccessToken(); // if access token expired, fetch the new one
-                }
-            })
-            .catch((err) => {
-                console.log("deletePostError", err)
-            })
+            }, deletePostHandler)
         }
     }
 
 }, false);
+
+async function fetchLikeNum(result) {
+    if(result.message === 'jwt expired') {
+        await fetchNewAccessToken(); // if access token expired, fetch the new one    
+    }
+
+    let num = likeTarget.querySelector('.likeNums');
+    num.innerHTML = result.like_nums || "";
+
+    if(result.isAlreadyLike === true) {
+        likeTarget.classList.add("active");
+    }
+    else if(result.isAlreadyLike === false) {
+        likeTarget.classList.remove("active");
+    }
+}
+
+async function fetchRetweetNum(result) {
+    if(result.message === 'jwt expired') {
+        await fetchNewAccessToken(); // if access token expired, fetch the new one    
+    }
+
+    let num = retweetTarget.querySelector('.retweetNums');
+    num.innerHTML = result.retweet_nums || "";
+
+    if(result.isAlreadyRetweet === true) {
+        retweetTarget.classList.add("active");
+    }
+    else if(result.isAlreadyRetweet === false) {
+        retweetTarget.classList.remove("active");
+    }
+}
+
+async function deletePostHandler(result) {
+    if(result.message === 'jwt expired') {
+        await fetchNewAccessToken(); // if access token expired, fetch the new one
+    }
+}
 
 
 function getPostIdFromElement(element) {
