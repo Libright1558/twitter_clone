@@ -1,9 +1,9 @@
-import express from 'express';
-import requireLogin from "../middleware/requireLogin.js";
-const router = express.Router();
-import rootController from "../controller/rootController.js";
+import express from 'express'
+import requireLogin from '../middleware/requireLogin.js'
+import rootController from '../controller/rootController.js'
+const router = express.Router()
 
-router.route("/")
-    .get(requireLogin.preLogin, rootController.intoTheHomePage)
+router.route('/')
+  .get(requireLogin.preLogin, rootController.intoTheHomePage)
 
 export default router
