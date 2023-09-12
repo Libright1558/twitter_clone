@@ -1,16 +1,15 @@
-import express from 'express';
-const router = express.Router();
-import postController from "../../controller/postController.js";
+import express from 'express'
+import postController from '../../controller/postController.js'
+const router = express.Router()
 
+router.route('/')
+  .get(postController.getPost)
+  .post(postController.postThePost)
 
-router.route("/")
-    .get(postController.getPost)
-    .post(postController.postThePost)
+router.put('/:id/like', postController.likePost)
 
-router.put("/:id/like", postController.likePost)
+router.put('/:id/retweet', postController.retweetPost)
 
-router.put("/:id/retweet", postController.retweetPost)
+router.delete('/:id/delete', postController.deletePost)
 
-router.delete("/:id/delete", postController.deletePost)
-
-export default router;
+export default router
