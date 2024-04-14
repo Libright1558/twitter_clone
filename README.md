@@ -5,3 +5,11 @@ The purpose of this project is to serve as my personal practice for planning sys
 ---
 ### Redis Schema
 WIP
+
+---
+### ToDo
+- [ ] Implement and fix redis schema to handle the like and the retweet event from users
+- [ ] Deal with the consistency in redis cache
+- [ ] Use react framework to remake frontend side of the project
+- [ ] Use nginx to balance the loading of multiple server nodes
+- [ ] etc.
