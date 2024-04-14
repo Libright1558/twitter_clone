@@ -1,91 +1,76 @@
-import redis from 'redis';
-const client = redis.createClient();
-import utility from "./utility.js";
+import redis from 'redis'
+import utility from './utility.js'
+const client = redis.createClient()
 
-client.on('error', err => console.log('Redis Client Error', err));
+client.on('error', err => console.log('Redis Client Error', err))
 
-//personal data ###################################################################
+// personal data ###################################################################
 const fetchPersonalData = async (username) => {
-    await client.connect();
+  await client.connect()
 
-    try {
-        const result = await client.HGET("personalData", username);
-
-        return result;
-    }
-    catch(err) {
-        console.log("redis fetchPersonalData error", err);
-    }
-    finally {
-        await client.quit();
-    }
-
+  try {
+    const result = await client.HGET('personalData', username)
+    return result
+  } catch (err) {
+    console.log('redis fetchPersonalData error', err)
+  } finally {
+    await client.quit()
+  }
 }
 
 const writePersonalData = async (username, personalData) => {
-    await client.connect();
+  await client.connect()
 
-    try {
-        await client.HSET("personalData", username, JSON.stringify(personalData));
-    }
-    catch(err) {
-        console.log("redis writePersonalData error", err);
-    }
-    finally {
-        await client.quit();
-    } 
+  try {
+    await client.HSET('personalData', username, JSON.stringify(personalData))
+  } catch (err) {
+    console.log('redis writePersonalData error', err)
+  } finally {
+    await client.quit()
+  }
 }
 
-//post ############################################################################
+// post ############################################################################
 const getPost = async (username) => {
+  await client.connect()
 
-    await client.connect();
+  try {
+    const idArray = await client.SMEMBERS(username + '_postid')
 
-    try {
-        const idArray = await client.SMEMBERS(username + "_postid");
+    const result = await utility.fetchPostHelper(idArray, client, username)
 
-        const result = await utility.fetchPostHelper(idArray, client, username);
-
-        return result;
-    }
-    catch(err) {
-        console.log("redis fetch error", err);
-    }
-    finally {
-        await client.quit();
-    }
+    return result
+  } catch (err) {
+    console.log('redis fetch error', err)
+  } finally {
+    await client.quit()
+  }
 }
 
-//set expire
+// set expire
 const setExpNX = async (key, times) => {
+  await client.connect()
 
-    await client.connect();
-
-    try {
-        client.expire(key, times, 'NX');
-    }
-    catch(err) {
-        console.log("redis setExpNX error", err);
-    }
-    finally {
-        await client.quit();
-    }
+  try {
+    client.expire(key, times, 'NX')
+  } catch (err) {
+    console.log('redis setExpNX error', err)
+  } finally {
+    await client.quit()
+  }
 }
 
-//writeBack #############################################################################################
+// writeBack #############################################################################################
 const postWriteBack = async (username, userPosts) => {
+  await client.connect()
 
-    await client.connect();
-
-    try {
-        await utility.postWriteBackHelper(userPosts, username, client);
-    } 
-    catch (err) {
-        console.log("redis postWriteBack error", err);
-    }
-    finally {
-        await client.quit();
-    }
+  try {
+    await utility.postWriteBackHelper(userPosts, username, client)
+  } catch (err) {
+    console.log('redis postWriteBack error', err)
+  } finally {
+    await client.quit()
+  }
 }
 
 // const userRetweetWriteBack = async (username, retweet) => {
@@ -102,7 +87,7 @@ const postWriteBack = async (username, userPosts) => {
 //             await postDetailWriteBack(retweet.rows[i]);
 //             await isUserLikeAndRetweetWriteBack(username, retweet.rows[i]);
 //         }
-//     } 
+//     }
 //     catch (err) {
 //         console.log("redis userRetweetWriteBack error", err);
 //     }
@@ -111,58 +96,48 @@ const postWriteBack = async (username, userPosts) => {
 //     }
 // }
 
-
-
-//delete key
+// delete key
 const delKey = async (key) => {
+  await client.connect()
 
-    await client.connect();
-
-    try {
-        await client.DEL(key);
-    } 
-    catch (err) {
-        console.log("redis delKey error", err);
-    }
-    finally {
-        await client.quit();
-    }
+  try {
+    await client.DEL(key)
+  } catch (err) {
+    console.log('redis delKey error', err)
+  } finally {
+    await client.quit()
+  }
 }
 
 const delField = async (key, field) => {
+  await client.connect()
 
-    await client.connect();
-
-    try {
-        await client.HDEL(key, field);
-    } 
-    catch (err) {
-        console.log("redis delField error", err);
-    }
-    finally {
-        await client.quit();
-    }
+  try {
+    await client.HDEL(key, field)
+  } catch (err) {
+    console.log('redis delField error', err)
+  } finally {
+    await client.quit()
+  }
 }
-//user comment
-
-
+// user comment
 
 export default {
-    //personalData
-    fetchPersonalData,
-    writePersonalData,
+  // personalData
+  fetchPersonalData,
+  writePersonalData,
 
-    //post
-    getPost,
-    
-    //remove expire and set expire
-    setExpNX,
-    
-    //delete key
-    delKey,
-    delField,
+  // post
+  getPost,
 
-    //writeBack
-    postWriteBack,
-    // userRetweetWriteBack,
-};
+  // remove expire and set expire
+  setExpNX,
+
+  // delete key
+  delKey,
+  delField,
+
+  // writeBack
+  postWriteBack
+  // userRetweetWriteBack,
+}
