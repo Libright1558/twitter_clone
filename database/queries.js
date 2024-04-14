@@ -102,6 +102,41 @@ const personalData =
 // insertPost
 const postData = 'INSERT INTO post_records(postby, content, ts) VALUES($1, $2, $3) RETURNING post_id'
 
+/*
+PL/pgsql
+
+CREATE  OR REPLACE FUNCTION like_or_dislike(_post_id UUID ,  _username VARCHAR(50))
+RETURNS TABLE (
+	isLiked BOOLEAN,
+	likeNum BIGINT
+)
+AS $$
+
+BEGIN
+
+  IF EXISTS (SELECT 1 FROM user_likes ul WHERE ul.post_id = _post_id AND ul.username = _username) THEN
+  	DELETE FROM user_likes ul WHERE ul.post_id = _post_id AND ul.username = _username;
+  ELSE
+  	INSERT INTO user_likes(post_id, username) VALUES(_post_id, _username);
+  END IF;
+
+RETURN QUERY
+SELECT (
+CASE
+	WHEN EXISTS(SELECT ul.username FROM user_likes ul
+WHERE ul.post_id = _post_id AND ul.username = _username)
+	THEN true
+	ELSE false
+END
+),
+COALESCE (
+(SELECT
+COUNT(ul.username)
+FROM user_likes ul WHERE ul.post_id = _post_id
+GROUP BY ul.post_id), 0);
+
+END;$$ LANGUAGE plpgsql;
+*/
 // user_like
 const like_or_dislike = 'SELECT isLiked, likeNum FROM like_or_dislike($1, $2)'
 
@@ -135,6 +170,41 @@ const fetchIsUserLikedAndLikeNum =
 FROM temp4 t4
 INNER JOIN temp5 t5 ON t4.post_id = t5.post_id`
 
+/*
+PL/pgsql
+
+CREATE  OR REPLACE FUNCTION retweet_or_disretweet(_post_id UUID ,  _username VARCHAR(50))
+RETURNS TABLE (
+	isRetweeted BOOLEAN,
+	retweetNum BIGINT
+) 
+AS $$
+
+BEGIN
+
+  IF EXISTS (SELECT 1 FROM user_retweets ur WHERE ur.post_id = _post_id AND ur.username = _username) THEN
+  	DELETE FROM user_retweets ur WHERE ur.post_id = _post_id AND ur.username = _username;
+  ELSE
+  	INSERT INTO user_retweets(post_id, username) VALUES(_post_id, _username);
+  END IF;
+
+RETURN QUERY
+SELECT (
+CASE
+	WHEN EXISTS(SELECT ur.username FROM user_retweets ur
+WHERE ur.post_id = _post_id AND ur.username = _username)
+	THEN true
+	ELSE false
+END
+),
+COALESCE (
+(SELECT
+COUNT(ur.username)
+FROM user_retweets ur WHERE ur.post_id = _post_id
+GROUP BY ur.post_id), 0);
+
+END;$$ LANGUAGE plpgsql;
+*/
 // user_retweet
 const retweet_or_disretweet = 'SELECT isRetweeted, retweetNum FROM retweet_or_disretweet($1, $2)'
 
