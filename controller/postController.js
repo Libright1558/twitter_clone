@@ -1,7 +1,7 @@
 import express from 'express'
 import databaseController from './databaseController.js'
 import moment from 'moment'
-import redis_cache from '../redis/cache.js'
+import redisCache from '../redis/cache.js'
 import utility from '../redis/utility.js'
 const app = express()
 
@@ -11,8 +11,8 @@ app.use(express.json())
 const getPost = async (req, res, next) => {
   try {
     const username = req.username
-    const post = await redis_cache.getPost(username)
-    // let retweet = await redis_cache.loadUserRetweet(username);
+    const post = await redisCache.getPost(username)
+    // let retweet = await redisCache.loadUserRetweet(username);
 
     const obj = {
       userPosts: post,
@@ -41,10 +41,10 @@ const getPost = async (req, res, next) => {
         })
         obj.userPosts = userPosts.rows
 
-        await redis_cache.postWriteBack(username, userPosts)
+        await redisCache.postWriteBack(username, userPosts)
 
-        await redis_cache.setExpNX(username + '_postid', process.env.exp_time)
-        await redis_cache.setExpNX('community_posts', process.env.exp_time)
+        await redisCache.setExpNX(username + '_postid', process.env.exp_time)
+        await redisCache.setExpNX('community_posts', process.env.exp_time)
       }
     }
 
@@ -61,12 +61,12 @@ const getPost = async (req, res, next) => {
     //     if(userRetweetsLen !== 0) {
     //         obj.userRetweets = userRetweets.rows;
 
-    //         await redis_cache.userRetweetWriteBack(username, userRetweets);
-    //         await redis_cache.setExp(username + "_retweet", process.env.exp_time);
+    //         await redisCache.userRetweetWriteBack(username, userRetweets);
+    //         await redisCache.setExp(username + "_retweet", process.env.exp_time);
     //     }
     // }
 
-    await utility.setCacheExp(username, redis_cache)
+    await utility.setCacheExp(username, redisCache)
 
     res.status(200).send(JSON.stringify(obj))
   } catch (err) {
@@ -85,12 +85,12 @@ const postThePost = async (req, res, next) => {
     const time = moment().local().format('YYYY-MM-DD HH:mm:ss')
     const postData = [username, content, time]
 
-    await redis_cache.delKey(username + '_postid')
+    await redisCache.delKey(username + '_postid')
 
     const result = await databaseController.postData(postData)
 
     setTimeout(async () => {
-      await redis_cache.delKey(username + '_postid')
+      await redisCache.delKey(username + '_postid')
     }, 5000)
 
     const deliver = {
@@ -118,8 +118,8 @@ const likePost = async (req, res, next) => {
     const postId = req.body.postId
     const username = req.username
 
-    await redis_cache.delField('likenum', postId)
-    await redis_cache.delField(username + '_isliked', postId)
+    await redisCache.delField('likenum', postId)
+    await redisCache.delField(username + '_isliked', postId)
 
     const response = await databaseController.like_or_dislike(postId, username)
 
@@ -129,8 +129,8 @@ const likePost = async (req, res, next) => {
     }
 
     setTimeout(async () => {
-      await redis_cache.delField('likenum', postId)
-      await redis_cache.delField(username + '_isliked', postId)
+      await redisCache.delField('likenum', postId)
+      await redisCache.delField(username + '_isliked', postId)
     }, 5000)
 
     res.status(200).send(JSON.stringify(obj))
@@ -144,8 +144,8 @@ const retweetPost = async (req, res, next) => {
     const postId = req.body.postId
     const username = req.username
 
-    await redis_cache.delField('retweetnum', postId)
-    await redis_cache.delField(username + '_isretweeted', postId)
+    await redisCache.delField('retweetnum', postId)
+    await redisCache.delField(username + '_isretweeted', postId)
 
     const response = await databaseController.retweet_or_disretweet(postId, username)
 
@@ -155,8 +155,8 @@ const retweetPost = async (req, res, next) => {
     }
 
     setTimeout(async () => {
-      await redis_cache.delField('retweetnum', postId)
-      await redis_cache.delField(username + '_isretweeted', postId)
+      await redisCache.delField('retweetnum', postId)
+      await redisCache.delField(username + '_isretweeted', postId)
     }, 5000)
 
     res.status(200).send(JSON.stringify(obj))
@@ -169,12 +169,12 @@ const deletePost = async (req, res, next) => {
   try {
     const postId = req.body.postId
 
-    await redis_cache.delField('community_posts', postId)
+    await redisCache.delField('community_posts', postId)
 
     await databaseController.deletePost(postId)
 
     setTimeout(async () => {
-      await redis_cache.delField('community_posts', postId)
+      await redisCache.delField('community_posts', postId)
     }, 5000)
   } catch (err) {
     console.log('posts.js router.delete error', err)
