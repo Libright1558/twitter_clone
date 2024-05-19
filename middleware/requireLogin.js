@@ -9,7 +9,8 @@ const preLogin = (req, res, next) => {
 
   const pubkey = fs.readFileSync(process.env.public_key, 'utf8')
   jwt.verify(refreshToken, pubkey, { algorithms: ['RS256'] }, (err, decoded) => {
-    if (err || !(decoded.username)) return res.redirect('/login')
+    if (err || !(decoded.userId) || !(decoded.username)) return res.redirect('/login')
+    req.userId = decoded.userId
     req.username = decoded.username
     next()
   })
