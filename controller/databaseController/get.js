@@ -1,4 +1,5 @@
 import sequelize from '../../database/sequelize.js'
+import pool from '../../database/pgPool.js'
 import queryUser from '../../database/queryString/queryUser.js'
 import queryPost from '../../database/queryString/queryPost.js'
 import { QueryTypes } from 'sequelize'
@@ -17,58 +18,67 @@ const userInfo = async (userId) => {
   }
 }
 
-const postInfo = async (username) => {
-  const t = await sequelize.transaction()
+/*
+* fetchList =
+* [
+*  content,
+*  createAt,
+*  likeNums,
+*  retweetNums,
+*  selfLike,
+*  selfRetweet
+* ]
+*
+* To check which one is absent in the redis cache
+* then query it
+* 0: absent, 1: present
+*/
+const postInfo = async (username, fetchList) => {
   try {
-    await sequelize.query(
-      queryPost.likeRetweetNum, {
-      },
-      { transaction: t }
-    )
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
 
-    await sequelize.query(
-      queryPost.postData, {
-      },
-      { transaction: t }
-    )
+      await client.query(queryPost.postData)
+      await client.query(queryPost.likeNum)
+      await client.query(queryPost.retweetNum)
+      await client.query(queryPost.selfLike)
+      await client.query(queryPost.selfRetweet)
 
-    await sequelize.query(
-      queryPost.selfLikeRetweet, {
-      },
-      { transaction: t }
-    )
+      if (!fetchList[0] || !fetchList[1]) {
+        await client.query(queryPost.appendPostData, [username])
+      } else {
+        await client.query(queryPost.appendPostId, [username])
+      }
 
-    await sequelize.query(
-      queryPost.appendPostData, {
-        bind: [username]
-      },
-      { transaction: t }
-    )
+      if (!fetchList[2]) {
+        await client.query(queryPost.appendLikeNum)
+      }
 
-    await sequelize.query(
-      queryPost.appendLikeRetweetNum, {
-      },
-      { transaction: t }
-    )
+      if (!fetchList[3]) {
+        await client.query(queryPost.appendRetweetNum)
+      }
 
-    await sequelize.query(
-      queryPost.appendSelfLikeRetweet, {
-        bind: [username]
-      },
-      { transaction: t }
-    )
+      if (!fetchList[4]) {
+        await client.query(queryPost.appendSelfLike, [username])
+      }
 
-    const postResult = await sequelize.query(
-      queryPost.fetchPost, {
-      },
-      { transaction: t }
-    )
+      if (!fetchList[5]) {
+        await client.query(queryPost.appendSelfRetweet, [username])
+      }
 
-    await t.commit()
-    return postResult
+      const postResult = await client.query(queryPost.fetchPost)
+
+      await client.query('COMMIT')
+      return postResult
+    } catch (err) {
+      await client.query('ROLLBACK')
+      console.log('postInfo error: ', err)
+    } finally {
+      client.release()
+    }
   } catch (err) {
-    await t.rollback()
-    console.log('sequelize postInfo error: ', err)
+    console.log('pgPool connection error: ', err)
   }
 }
 
