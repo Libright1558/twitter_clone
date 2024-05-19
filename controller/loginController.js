@@ -1,5 +1,5 @@
 import express from 'express'
-import databaseController from './databaseController.js'
+import { findOne } from './databaseController/regist.js'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import 'dotenv/config'
@@ -20,26 +20,26 @@ const userLogin = async (req, res, next) => {
       return res.status(400).render('login', payload)
     }
 
-    const user = await databaseController.findOne(req.body.logUsername)
+    const user = await findOne(req.body.logUsername)
 
-    if (user.rows[0] === null || user.rows[0] === undefined) {
+    if (user[0] === null || user[0] === undefined) {
       payload.errorMessage = 'username or password incorrect.'
       return res.status(400).render('login', payload)
     }
 
-    const result = await bcrypt.compare(req.body.logPassword, user.rows[0].password)
+    const result = await bcrypt.compare(req.body.logPassword, user[0].password)
 
     if (result === true) {
       const privkey = fs.readFileSync(process.env.private_key, 'utf8')
 
-      const accessToken = jwt.sign({ username: user.rows[0].username }
+      const accessToken = jwt.sign({ userId: user[0].userId, username: user[0].username }
         , privkey
         , {
           algorithm: 'RS256',
           expiresIn: '30s'
         })
 
-      const refreshToken = jwt.sign({ username: user.rows[0].username }
+      const refreshToken = jwt.sign({ userId: user[0].userId, username: user[0].username }
         , privkey
         , {
           algorithm: 'RS256',
