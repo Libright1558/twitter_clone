@@ -6,18 +6,26 @@ const sequelize = new Sequelize({
   database: process.env.db_schema,
   port: process.env.db_port,
   user: process.env.db_user,
-  dialect: process.env.db_type
+  dialect: process.env.db_type,
+  logging: false,
+  pool: {
+    max: 2
+  }
 })
 
-try {
-  await sequelize.authenticate()
-  console.log('Connection has been established successfully.')
-} catch (error) {
-  console.error('Unable to connect to the database: ', error)
+const testConnect = async () => {
+  try {
+    await sequelize.authenticate()
+    console.log('Connection has been established successfully.')
+  } catch (error) {
+    console.log('Unable to connect to the database: ', error)
+  }
 }
 
+testConnect()
+
 const user = sequelize.define(
-  'user',
+  'user_table',
   {
     userId: {
       type: DataTypes.UUID,
@@ -44,6 +52,14 @@ const user = sequelize.define(
     },
     profilepic: {
       type: DataTypes.TEXT
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: sequelize.literal('NOW()')
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: sequelize.literal('NOW()')
     }
   },
   {
@@ -52,7 +68,7 @@ const user = sequelize.define(
 )
 
 const post = sequelize.define(
-  'post',
+  'post_table',
   {
     postId: {
       type: DataTypes.UUID,
@@ -62,11 +78,14 @@ const post = sequelize.define(
     },
     postby: {
       type: DataTypes.STRING(50),
-      allowNull: false,
-      unique: true
+      allowNull: false
     },
     content: {
       type: DataTypes.TEXT
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: sequelize.literal('NOW()')
     }
   },
   {
@@ -77,7 +96,7 @@ const post = sequelize.define(
 )
 
 const like = sequelize.define(
-  'like',
+  'like_table',
   {
     postId: {
       type: DataTypes.UUID,
@@ -86,18 +105,22 @@ const like = sequelize.define(
     },
     username: {
       type: DataTypes.STRING(50),
-      allowNull: false,
-      unique: true
+      allowNull: false
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: sequelize.literal('NOW()')
     }
   },
   {
-    timestamps: false,
+    timestamps: true,
+    updatedAt: false,
     freezeTableName: true
   }
 )
 
 const retweet = sequelize.define(
-  'retweet',
+  'retweet_table',
   {
     postId: {
       type: DataTypes.UUID,
@@ -106,18 +129,22 @@ const retweet = sequelize.define(
     },
     username: {
       type: DataTypes.STRING(50),
-      allowNull: false,
-      unique: true
+      allowNull: false
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: sequelize.literal('NOW()')
     }
   },
   {
-    timestamps: false,
+    timestamps: true,
+    updatedAt: false,
     freezeTableName: true
   }
 )
 
 const pinned = sequelize.define(
-  'pinned',
+  'pinned_table',
   {
     postId: {
       type: DataTypes.UUID,
