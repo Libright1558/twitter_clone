@@ -1,76 +1,140 @@
 /*
 * Create temporary tables for post data
 */
-const likeRetweetNum =
-`CREATE TEMPORARY TABLE IF NOT EXISTS lRN (
-    likeNum INT,
-    retweetNum INT,
-    postId UUID
+const likeNum =
+`CREATE TEMP TABLE IF NOT EXISTS "lN" (
+    "likeNum" INT,
+    "postId" UUID
+) ON COMMIT DROP`
+
+const retweetNum =
+`CREATE TEMP TABLE IF NOT EXISTS "rN" (
+    "retweetNum" INT,
+    "postId" UUID
 ) ON COMMIT DROP`
 
 const postData =
-`CREATE TEMPORARY TABLE IF NOT EXISTS pD (
-    postId UUID,
+`CREATE TEMP TABLE IF NOT EXISTS posd (
+    "postId" UUID,
     postby VARCHAR(50),
     content TEXT,
-    createdAt TIMESTAMP
+    "createdAt" TIMESTAMP
 ) ON COMMIT DROP`
 
-const selfLikeRetweet =
-`CREATE TEMPORARY TABLE IF NOT EXISTS sLR (
-    selfLike BOOLEAN,
-    selfRetweet BOOLEAN,
-    postId UUID
+const selfLike =
+`CREATE TEMP TABLE IF NOT EXISTS "sL" (
+    "selfLike" BOOLEAN,
+    "postId" UUID
+) ON COMMIT DROP`
+
+const selfRetweet =
+`CREATE TEMP TABLE IF NOT EXISTS "sR" (
+    "selfRetweet" BOOLEAN,
+    "postId" UUID
 ) ON COMMIT DROP`
 
 /*
 * Append temporary tables
 */
-const appendLikeRetweetNum =
-`INSERT INTO lRN (postId, retweetNum, likeNum)
-SELECT pD.postId, COUNT(retweet.username), COUNT(like.username)
-FROM pD
-LEFT JOIN like ON pD.postId = like.postId  
-LEFT JOIN retweet ON pD.postId = retweet.postId
-GROUP BY pD.postId`
+const appendLikeNum =
+`INSERT INTO "lN" ("postId", "likeNum")
+SELECT posd."postId", COUNT(like_table.username)
+FROM posd
+LEFT JOIN like_table ON posd."postId" = like_table."postId"
+GROUP BY posd."postId"`
+
+const appendRetweetNum =
+`INSERT INTO "rN" ("postId", "retweetNum")
+SELECT posd."postId", COUNT(retweet_table.username)
+FROM posd  
+LEFT JOIN retweet_table ON posd."postId" = retweet_table."postId"
+GROUP BY posd."postId"`
 
 const appendPostData =
-`INSERT INTO pD (postId, postby, content, createdAt)
-SELECT postId, postby, content, createdAt
-FROM post WHERE postby = $1`
+`INSERT INTO posd ("postId", postby, content, "createdAt")
+SELECT "postId", postby, content, "createdAt"
+FROM post_table WHERE postby = $1`
 
-const appendSelfLikeRetweet =
-`INSERT INTO sLR (postId, selfRetweet, selfLike)
-SELECT pD.postId, 
+const appendPostId =
+`INSERT INTO posd ("postId", postby)
+SELECT "postId", postby
+FROM post_table WHERE postby = $1`
+
+const appendSelfLike =
+`INSERT INTO "sL" ("postId", "selfLike")
+SELECT posd."postId",
 (CASE
-    WHEN retweet.username IS NULL THEN false
-    ELSE true
-END), 
-(CASE
-    WHEN like.username IS NULL THEN false
+    WHEN like_table.username IS NULL THEN false
     ELSE true
 END)
-FROM pD
-LEFT JOIN like ON pD.postId = like.postId AND like.username = $1
-LEFT JOIN retweet ON pD.postId = retweet.postId AND retweet.username = $1`
+FROM posd
+LEFT JOIN like_table ON posd."postId" = like_table."postId" AND like_table.username = $1`
+
+const appendSelfRetweet =
+`INSERT INTO "sR" ("postId", "selfRetweet")
+SELECT posd."postId", 
+(CASE
+    WHEN retweet_table.username IS NULL THEN false
+    ELSE true
+END)
+FROM posd
+LEFT JOIN retweet_table ON posd."postId" = retweet_table."postId" AND retweet_table.username = $1`
 
 /*
-* Post data
+* fetch Post data
 */
 const fetchPost =
-`SELECT pD.postby, content, createdAt, pD.postId, likeNum, retweetNum, selfRetweet, selfLike, 
+`SELECT posd.postby, posd.content, posd."createdAt", posd."postId", "likeNum", "retweetNum", "selfRetweet", "selfLike", 
 firstname, lastname, profilepic
-FROM pD
-INNER JOIN lRN ON pD.postId = lRN.postId
-INNER JOIN sLR ON pD.postId = sLR.postId
-INNER JOIN user ON pD.postby = user.username`
+FROM posd
+LEFT JOIN "lN" ON posd."postId" = "lN"."postId"
+LEFT JOIN "rN" ON posd."postId" = "rN"."postId"
+LEFT JOIN "sL" ON posd."postId" = "sL"."postId"
+LEFT JOIN "sR" ON posd."postId" = "sR"."postId"
+INNER JOIN user_table ON posd.postby = user_table.username`
+
+const fetchLikeNum =
+`SELECT "postId", "likeNum" FROM "lN"
+WHERE "postId" = $1`
+
+const fetchRetweetNum =
+`SELECT "postId", "retweetNum" FROM "rN"
+WHERE "postId" = $1`
+
+const fetchSelfLike =
+`SELECT "postId", "selfLike" FROM "sL"
+WHERE "postId" = $1`
+
+const fetchSelfRetweet =
+`SELECT "postId", "selfRetweet" FROM "sR"
+WHERE "postId" = $1`
 
 export default {
-  likeRetweetNum,
+  /*
+  * Create temporary tables for post data
+  */
+  likeNum,
+  retweetNum,
   postData,
-  selfLikeRetweet,
-  appendLikeRetweetNum,
+  selfLike,
+  selfRetweet,
+
+  /*
+  * Append temporary tables
+  */
+  appendLikeNum,
+  appendRetweetNum,
   appendPostData,
-  appendSelfLikeRetweet,
-  fetchPost
+  appendPostId,
+  appendSelfLike,
+  appendSelfRetweet,
+
+  /*
+  * fetch Post data
+  */
+  fetchPost,
+  fetchLikeNum,
+  fetchRetweetNum,
+  fetchSelfLike,
+  fetchSelfRetweet
 }
