@@ -1,100 +1,47 @@
-import redis from 'redis'
-import utility from './utility.js'
+import * as redis from 'redis'
+import { setUserInfoExp, setPostInfoExp } from './transaction.js'
 const client = redis.createClient()
 
 client.on('error', err => console.log('Redis Client Error', err))
 
-// personal data ###################################################################
-const fetchPersonalData = async (username) => {
+// test if connection is alive
+const pingTest = async () => {
   await client.connect()
 
   try {
-    const result = await client.HGET('personalData', username)
-    return result
+    const response = await client.PING()
+    return response
   } catch (err) {
-    console.log('redis fetchPersonalData error', err)
-  } finally {
-    await client.quit()
-  }
-}
-
-const writePersonalData = async (username, personalData) => {
-  await client.connect()
-
-  try {
-    await client.HSET('personalData', username, JSON.stringify(personalData))
-  } catch (err) {
-    console.log('redis writePersonalData error', err)
-  } finally {
-    await client.quit()
-  }
-}
-
-// post ############################################################################
-const getPost = async (username) => {
-  await client.connect()
-
-  try {
-    const idArray = await client.SMEMBERS(username + '_postid')
-
-    const result = await utility.fetchPostHelper(idArray, client, username)
-
-    return result
-  } catch (err) {
-    console.log('redis fetch error', err)
+    console.log('redis pingTest error', err)
   } finally {
     await client.quit()
   }
 }
 
 // set expire
-const setExpNX = async (key, times) => {
+const setUserExpNX = async (times) => {
   await client.connect()
 
   try {
-    client.expire(key, times, 'NX')
+    await setUserInfoExp(client, times)
   } catch (err) {
-    console.log('redis setExpNX error', err)
+    console.log('redis setUserExpNX error', err)
   } finally {
     await client.quit()
   }
 }
 
-// writeBack #############################################################################################
-const postWriteBack = async (username, userPosts) => {
+const setPostExpNX = async (userId, times) => {
   await client.connect()
 
   try {
-    await utility.postWriteBackHelper(userPosts, username, client)
+    await setPostInfoExp(client, userId, times)
   } catch (err) {
-    console.log('redis postWriteBack error', err)
+    console.log('redis setPostExpNX error', err)
   } finally {
     await client.quit()
   }
 }
-
-// const userRetweetWriteBack = async (username, retweet) => {
-//     try {
-//         await client.connect();
-
-//         let count = 0;
-
-//         const rowLength = retweet.rows.length;
-//         for(let i = 0; i < rowLength; i++) {
-//             let obj = {score: count++, value: JSON.stringify(retweet.rows[i])};
-//             await client.ZADD(username + "_retweet", obj);
-
-//             await postDetailWriteBack(retweet.rows[i]);
-//             await isUserLikeAndRetweetWriteBack(username, retweet.rows[i]);
-//         }
-//     }
-//     catch (err) {
-//         console.log("redis userRetweetWriteBack error", err);
-//     }
-//     finally {
-//         await client.quit();
-//     }
-// }
 
 // delete key
 const delKey = async (key) => {
@@ -120,24 +67,18 @@ const delField = async (key, field) => {
     await client.quit()
   }
 }
-// user comment
 
-export default {
-  // personalData
-  fetchPersonalData,
-  writePersonalData,
+export {
+  client,
 
-  // post
-  getPost,
+  // test if connection is alive
+  pingTest,
 
   // remove expire and set expire
-  setExpNX,
+  setUserExpNX,
+  setPostExpNX,
 
   // delete key
   delKey,
-  delField,
-
-  // writeBack
-  postWriteBack
-  // userRetweetWriteBack,
+  delField
 }
