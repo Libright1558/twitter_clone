@@ -1,18 +1,19 @@
-import databaseController from './databaseController.js'
-import redisCache from '../redis/cache.js'
+import { setUserExpNX } from '../redis/cache.js'
+import { fetchPersonalData } from '../redis/get.js'
+import { writePersonalData } from '../redis/write.js'
+import { userInfo } from './databaseController/get.js'
 
 const intoTheHomePage = async (req, res, next) => {
   try {
-    const username = req.username
+    const userId = req.userId
+    let personalData = await fetchPersonalData(userId)
 
-    let personalData = await redisCache.fetchPersonalData(username)
-    if (!personalData) {
-      const response = await databaseController.fetchPersonalData(username)
-      personalData = response.rows[0]
-      await redisCache.writePersonalData(username, personalData)
-      await redisCache.setExpNX('personalData', 900)
-    } else {
-      personalData = JSON.parse(personalData)
+    if (!personalData || !personalData.username) {
+      const response = await userInfo(userId)
+      personalData = response[0]
+
+      await writePersonalData(userId, personalData)
+      await setUserExpNX(900)
     }
 
     const payload = {
