@@ -13,10 +13,11 @@ const verifyJWT = (req, res, next) => {
       return res.status(403).send(err)// token expired
     }
 
-    if (err || !(decoded.username)) {
+    if (err || !(decoded.userId) || !(decoded.username)) {
       return res.sendStatus(403)// invalid token
     }
 
+    req.userId = decoded.userId
     req.username = decoded.username
     next()
   })
