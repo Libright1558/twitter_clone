@@ -1,8 +1,10 @@
 import express from 'express'
-import databaseController from './databaseController.js'
 import moment from 'moment'
-import redisCache from '../redis/cache.js'
-import utility from '../redis/utility.js'
+import { setPostExpNX } from '../redis/cache.js'
+import { getPosts } from '../redis/get.js'
+import { postInfo } from './databaseController/get.js'
+import vanillaSort from '../library/sort/vanillaSort.js'
+import { postWriteBack } from '../redis/write.js'
 const app = express()
 
 app.use(express.urlencoded({ extended: false }))
@@ -11,62 +13,92 @@ app.use(express.json())
 const getPost = async (req, res, next) => {
   try {
     const username = req.username
-    const post = await redisCache.getPost(username)
-    // let retweet = await redisCache.loadUserRetweet(username);
+    const userId = req.userId
+
+    const postIdArray = await getPostIdArray(username) // not implement yet
+    const post = await getPosts(postIdArray)
 
     const obj = {
-      userPosts: post,
-      userRetweets: null
+      userPosts: post
     }
 
-    if (post === undefined || post === null) {
-      const userPosts = await databaseController.fetchPost(username)
+    const fetchList = [0, 0, 0, 0, 0, 0]
 
-      const userPostsLen = userPosts.rows ? userPosts.rows.length : 0
-
-      for (let i = 0; i < userPostsLen; i++) {
-        userPosts.rows[i].ts = moment(userPosts.rows[i].ts).format('YYYY-MM-DD HH:mm:ss')
+    if (postIdArray.length !== 0) {
+      if (post.postOwner && post.content) {
+        fetchList[0] = 1
       }
 
-      if (userPostsLen !== 0) {
-        userPosts.rows.sort(function (a, b) {
-          if (a.ts > b.ts) {
-            return -1
-          }
+      // if (post.createdAt) {
+      //   fetchList[1] = 1
+      // }  Will be removed later
 
-          if (a.ts < b.ts) {
-            return 1
-          }
-          return 0
-        })
-        obj.userPosts = userPosts.rows
+      if (post.likeNums) {
+        fetchList[2] = 1
+      }
 
-        await redisCache.postWriteBack(username, userPosts)
+      if (post.retweetNums) {
+        fetchList[3] = 1
+      }
 
-        await redisCache.setExpNX(username + '_postid', process.env.exp_time)
-        await redisCache.setExpNX('community_posts', process.env.exp_time)
+      if (post.selfLike) {
+        fetchList[4] = 1
+      }
+
+      if (post.selfRetweet) {
+        fetchList[5] = 1
       }
     }
 
-    // if(retweet === null || retweet === undefined) {
+    let userPosts = await postInfo(username, fetchList)
 
-    //     let userRetweets = await databaseController.fetchUserRetweet(username);
+    const userPostsLen = userPosts.rows ? userPosts.rows.length : 0
 
-    //     let userRetweetsLen = userRetweets.rows ? userRetweets.rows.length : 0;
+    if (userPostsLen !== 0) {
+      userPosts = await vanillaSort(userPosts.rows, 'createdAt')
+    }
 
-    //     for(let i = 0; i < userRetweetsLen; i++) {
-    //         userRetweets.rows[i].ts = moment(userRetweets.rows[i].ts).format('YYYY-MM-DD HH:mm:ss');
-    //     }
+    const postOwner = []
+    const content = []
+    const createdAt = []
+    const likeNums = []
+    const retweetNums = []
+    const selfLike = []
+    const selfRetweet = []
 
-    //     if(userRetweetsLen !== 0) {
-    //         obj.userRetweets = userRetweets.rows;
+    for (let i = 0; i < userPostsLen; i++) {
+      userPosts.rows[i].createdAt = moment(userPosts.rows[i].createdAt).format('YYYY-MM-DD HH:mm:ss')
 
-    //         await redisCache.userRetweetWriteBack(username, userRetweets);
-    //         await redisCache.setExp(username + "_retweet", process.env.exp_time);
-    //     }
-    // }
+      userPosts.rows[i].postby = fetchList[0] !== 0 ? post.postOwner[i] : userPosts.rows[i].postby
+      userPosts.rows[i].content = fetchList[0] !== 0 ? post.content[i] : userPosts.rows[i].content
+      userPosts.rows[i].likeNum = fetchList[2] !== 0 ? post.likeNums[i] : userPosts.rows[i].likeNum
+      userPosts.rows[i].retweetNum = fetchList[3] !== 0 ? post.retweetNums[i] : userPosts.rows[i].retweetNum
+      userPosts.rows[i].selfLike = fetchList[4] !== 0 ? post.selfLike[i] : userPosts.rows[i].selfLike
+      userPosts.rows[i].selfRetweet = fetchList[5] !== 0 ? post.selfRetweet[i] : userPosts.rows[i].selfRetweet
 
-    await utility.setCacheExp(username, redisCache)
+      postOwner.push([userPosts.rows[i].postId, userPosts.rows[i].postby])
+      content.push([userPosts.rows[i].postId, userPosts.rows[i].content])
+      createdAt.push([userPosts.rows[i].postId, userPosts.rows[i].createdAt])
+      likeNums.push([userPosts.rows[i].postId, userPosts.rows[i].likeNum])
+      retweetNums.push([userPosts.rows[i].postId, userPosts.rows[i].retweetNum])
+      selfLike.push([userPosts.rows[i].postId, userPosts.rows[i].selfLike])
+      selfRetweet.push([userPosts.rows[i].postId, userPosts.rows[i].selfRetweet])
+    }
+
+    const postNestObj = {
+      postOwner,
+      content,
+      createdAt,
+      likeNums,
+      retweetNums,
+      selfLike,
+      selfRetweet
+    }
+
+    obj.userPosts = userPosts
+
+    await postWriteBack(userId, postNestObj, fetchList)
+    await setPostExpNX(userId, 300)
 
     res.status(200).send(JSON.stringify(obj))
   } catch (err) {
@@ -74,117 +106,6 @@ const getPost = async (req, res, next) => {
   }
 }
 
-const postThePost = async (req, res, next) => {
-  try {
-    if (!(req.body.content)) {
-      console.log('Content param can not send with request')
-      return res.sendStatus(400)
-    }
-    const username = req.username
-    const content = req.body.content
-    const time = moment().local().format('YYYY-MM-DD HH:mm:ss')
-    const postData = [username, content, time]
-
-    await redisCache.delKey(username + '_postid')
-
-    const result = await databaseController.postData(postData)
-
-    setTimeout(async () => {
-      await redisCache.delKey(username + '_postid')
-    }, 5000)
-
-    const deliver = {
-      postData: content,
-      timestamp: time,
-      post_id: result.rows[0].post_id,
-      likenum: 0,
-      isliked: false,
-      retweetnum: 0,
-      isretweeted: false,
-      postby: username,
-      firstName: req.session.user.firstName,
-      lastName: req.session.user.lastName,
-      profilePic: req.session.user.profilePic
-    }
-
-    res.status(201).send(JSON.stringify(deliver))
-  } catch (err) {
-    console.log('posts.js router.post error', err)
-  }
-}
-
-const likePost = async (req, res, next) => {
-  try {
-    const postId = req.body.postId
-    const username = req.username
-
-    await redisCache.delField('likenum', postId)
-    await redisCache.delField(username + '_isliked', postId)
-
-    const response = await databaseController.like_or_dislike(postId, username)
-
-    const obj = {
-      isAlreadyLike: response.rows[0].isliked,
-      like_nums: response.rows[0].likenum
-    }
-
-    setTimeout(async () => {
-      await redisCache.delField('likenum', postId)
-      await redisCache.delField(username + '_isliked', postId)
-    }, 5000)
-
-    res.status(200).send(JSON.stringify(obj))
-  } catch (err) {
-    console.log('posts.js router.put_like error', err)
-  }
-}
-
-const retweetPost = async (req, res, next) => {
-  try {
-    const postId = req.body.postId
-    const username = req.username
-
-    await redisCache.delField('retweetnum', postId)
-    await redisCache.delField(username + '_isretweeted', postId)
-
-    const response = await databaseController.retweet_or_disretweet(postId, username)
-
-    const obj = {
-      isAlreadyRetweet: response.rows[0].isretweeted,
-      retweet_nums: response.rows[0].retweetnum
-    }
-
-    setTimeout(async () => {
-      await redisCache.delField('retweetnum', postId)
-      await redisCache.delField(username + '_isretweeted', postId)
-    }, 5000)
-
-    res.status(200).send(JSON.stringify(obj))
-  } catch (err) {
-    console.log('posts.js router.put_retweet error', err)
-  }
-}
-
-const deletePost = async (req, res, next) => {
-  try {
-    const postId = req.body.postId
-
-    await redisCache.delField('community_posts', postId)
-
-    await databaseController.deletePost(postId)
-
-    setTimeout(async () => {
-      await redisCache.delField('community_posts', postId)
-    }, 5000)
-  } catch (err) {
-    console.log('posts.js router.delete error', err)
-  }
-}
-
 export default {
-  getPost,
-  postThePost,
-  likePost,
-  retweetPost,
-  deletePost
+  getPost
 }
