@@ -1,6 +1,6 @@
 import express from 'express'
-import databaseController from './databaseController.js'
 import bcrypt from 'bcrypt'
+import { findDup, initRegist } from './databaseController/regist.js'
 const app = express()
 
 app.use(express.urlencoded({ extended: false }))
@@ -20,21 +20,23 @@ const registAccount = async (req, res, next) => {
 
   if (firstName && lastName && username && email && password) {
     let user
+    const param = [username, email]
+
     try {
-      user = await databaseController.findDup(username, email)
+      user = await findDup(param)
     } catch (e) {
       console.log(e)
       payload.errorMessage = 'Something went worng.'
       res.status(200).render('register', payload)
     }
 
-    if (user.rows[0] == null) {
+    if (user[0] == null) {
       // No user found
       try {
         password = await bcrypt.hash(password, 12) // Hashing the password.
-        const default_profile = '/images/UserProfiles/ProfilePic.jpeg'
-        const user_data = [firstName, lastName, username, email, password, default_profile]
-        await databaseController.regist(user_data)// Writing user's data into the database.
+        const defaultProfile = '/images/UserProfiles/ProfilePic.jpeg'
+        const userData = [firstName, lastName, username, email, password, defaultProfile]
+        await initRegist(userData)// Writing user's data into the database.
 
         return res.redirect('/login')
       } catch (e) {
@@ -44,7 +46,7 @@ const registAccount = async (req, res, next) => {
       }
     } else {
       // User found
-      if (email === user.rows[0].email) {
+      if (email === user[0].email) {
         payload.errorMessage = 'Email already in use.'
       } else {
         payload.errorMessage = 'username already in use.'
