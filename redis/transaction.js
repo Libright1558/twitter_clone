@@ -44,6 +44,11 @@ const getPostInfo = async (client, userId, postIdArray) => {
   return obj
 }
 
+const getPostIdArray = async (client, userId) => {
+  const result = await client.LRANGE(userId + '_postIdArray', 0, -1)
+  return result
+}
+
 const writeUserInfo = async (client, userId, userInfo) => {
   await client
     .multi()
@@ -108,6 +113,11 @@ const writePostInfo = async (client, userId, postNestObj, listArray) => {
   }
 }
 
+// member is an array
+const writePostIdArray = async (client, userId, member) => {
+  await client.RPUSH(userId + '_postIdArray', member)
+}
+
 /*
 * expTime => lock expire time
 *
@@ -169,6 +179,19 @@ const renewRetweetNums = async (client, postId, obj, expTime) => {
   }
 }
 
+const deletePostInfo = async (client, userId, postId) => {
+  await client
+    .multi()
+    .HDEL('postOwner', postId)
+    .HDEL('content', postId)
+    .HDEL('createdAt', postId)
+    .HDEL('likeNums', postId)
+    .HDEL('retweetNums', postId)
+    .HDEL(userId + '_selfLike', postId)
+    .HDEL(userId + '_selfRetweet', postId)
+    .exec()
+}
+
 const setUserInfoExp = async (client, times) => {
   await client
     .multi()
@@ -190,16 +213,20 @@ const setPostInfoExp = async (client, userId, times) => {
     .expire('retweetNums', times, 'NX')
     .expire(userId + '_selfLike', times, 'NX')
     .expire(userId + '_selfRetweet', times, 'NX')
+    .expire(userId + '_postIdArray', times, 'NX')
     .exec()
 }
 
 export {
   getUserInfo,
   getPostInfo,
+  getPostIdArray,
   writeUserInfo,
   writePostInfo,
+  writePostIdArray,
   renewLikeNums,
   renewRetweetNums,
+  deletePostInfo,
   setUserInfoExp,
   setPostInfoExp
 }
