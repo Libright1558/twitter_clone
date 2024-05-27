@@ -1,5 +1,5 @@
 import { client } from './cache.js'
-import { getPostInfo, getUserInfo } from './transaction.js'
+import { getPostInfo, getUserInfo, getPostIdArray } from './transaction.js'
 
 const fetchPersonalData = async (userId) => {
   await client.connect()
@@ -14,11 +14,11 @@ const fetchPersonalData = async (userId) => {
   }
 }
 
-const getPosts = async (postIdArray) => {
+const getPosts = async (userId, postIdArray) => {
   await client.connect()
 
   try {
-    const result = await getPostInfo(client, postIdArray)
+    const result = await getPostInfo(client, userId, postIdArray)
     return result
   } catch (err) {
     console.log('redis getPosts error', err)
@@ -27,7 +27,21 @@ const getPosts = async (postIdArray) => {
   }
 }
 
+const fetchPostIdArray = async (userId) => {
+  await client.connect()
+
+  try {
+    const result = await getPostIdArray(client, userId)
+    return result
+  } catch (err) {
+    console.log('redis getSortedPostIdArray error', err)
+  } finally {
+    await client.quit()
+  }
+}
+
 export {
   fetchPersonalData,
-  getPosts
+  getPosts,
+  fetchPostIdArray
 }
