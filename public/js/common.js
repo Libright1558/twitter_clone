@@ -1,6 +1,3 @@
-import fetchRetry from './library/fetchRetry.js'
-import fetchNewAccessToken from './library/getNewAccessToken.js'
-
 const Textarea = document.getElementById('postTextarea')
 const submitPostButton = document.getElementById('submitPostButton')
 
@@ -16,14 +13,38 @@ submitPostButton.addEventListener('click', () => {
     const postText = {
       content: value
     }
-    fetchRetry('/api/posts', 500, 2, {
+    fetch('/api/posts', {
       credentials: 'include',
       body: JSON.stringify(postText),
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       }
-    }, postNewTexts)
+    })
+      .then((res) => {
+        return res.json()
+      })
+      .then((returnedValue) => {
+        const resultPost = {
+          firstName: userLoggedIn.firstname,
+          lastName: userLoggedIn.lastname,
+          profilePic: userLoggedIn.profilepic,
+          timestamp: returnedValue.createdAt,
+          postData: postText.content,
+          postby: userLoggedIn.username,
+          post_id: returnedValue.postId,
+          likenum: 0,
+          retweetnum: 0,
+          isretweeted: false,
+          isliked: false
+        }
+        const html = createPostHtml(resultPost)
+        const postsContainer = document.querySelector('.postsContainer')
+        postsContainer.insertAdjacentHTML('beforeend', html)
+      })
+      .catch(e => {
+        console.log('postText fail: ', e)
+      })
   } catch (e) {
     console.log('Content param can not send with request', e)
   } finally {
@@ -32,42 +53,31 @@ submitPostButton.addEventListener('click', () => {
   }
 })
 
-async function postNewTexts (result) {
-  if (result.message === 'jwt expired') {
-    await fetchNewAccessToken() // if access token expired, fetch the new one
-    throw new Error('token expired!')
-  }
+// render the commentReplyText
+// const replyModal = document.getElementById('replyModal')
+// replyModal.addEventListener('show.bs.modal', (e) => {
+//   const commentTarget = e.relatedTarget
+//   const postId = getPostIdFromElement(commentTarget)
 
-  const html = createPostHtml(result)
-  const postsContainer = document.querySelector('.postsContainer')
-  postsContainer.insertAdjacentHTML('afterbegin', html)
-}
+//   fetch(`/api/posts/${postId}`, {
+//     method: 'GET'
+//   })
+//     .then((response) => {
+//       return response.json()
+//     })
+//     .then((result) => {
+//       console.log(result) // test
+//     })
+// })
 
-// render the replyText
-const replyModal = document.getElementById('replyModal')
-replyModal.addEventListener('show.bs.modal', (e) => {
-  const commentTarget = e.relatedTarget
-  const postId = getPostIdFromElement(commentTarget)
+// // replyTextarea button handler
+// const replyTextarea = document.getElementById('replyTextarea')
+// const submitReplyButton = document.getElementById('submitReplyButton')
 
-  fetch(`/api/posts/${postId}`, {
-    method: 'GET'
-  })
-    .then((response) => {
-      return response.json()
-    })
-    .then((result) => {
-      console.log(result) // test
-    })
-})
-
-// replyTextarea button handler
-const replyTextarea = document.getElementById('replyTextarea')
-const submitReplyButton = document.getElementById('submitReplyButton')
-
-// enable the button if there are texts in the textarea
-replyTextarea.addEventListener('input', () => {
-  submitReplyButton.disabled = replyTextarea.value.trim() === ''
-})
+// // enable the button if there are texts in the textarea
+// replyTextarea.addEventListener('input', () => {
+//   submitReplyButton.disabled = replyTextarea.value.trim() === ''
+// })
 
 // button click handler
 const postsContainer = document.querySelector('.postsContainer')
@@ -79,18 +89,30 @@ postsContainer.addEventListener('click', (e) => {
   if (likeTarget) {
     const postId = getPostIdFromElement(likeTarget)
     if (postId !== undefined) {
-      const updateLike = {
-        postId
-      }
-
-      fetch(`api/posts/${postId}/like`, 500, 2, {
+      fetch('api/posts/like', {
         credentials: 'include',
         method: 'PUT',
-        body: JSON.stringify(updateLike),
+        body: JSON.stringify({ postId }),
         headers: {
           'Content-Type': 'application/json'
         }
-      }, fetchLikeNum, likeTarget)
+      })
+        .then(res => {
+          return res.json()
+        })
+        .then(returnedValue => {
+          const likeNums = document.querySelector('.likeNums')
+          const likeButton = document.querySelector('.likeButton')
+          likeNums.value = returnedValue
+          if (likeButton.classList.contains('active')) {
+            likeButton.classList.remove('active')
+          } else {
+            likeButton.classList.add('active')
+          }
+        })
+        .catch(e => {
+          console.log('likePost fail: ', e)
+        })
     }
   }
 
@@ -100,18 +122,30 @@ postsContainer.addEventListener('click', (e) => {
   if (retweetTarget) {
     const postId = getPostIdFromElement(retweetTarget)
     if (postId !== undefined) {
-      const updateRetweet = {
-        postId
-      }
-
-      fetchRetry(`api/posts/${postId}/retweet`, 500, 2, {
+      fetch('api/posts/retweet', {
         credentials: 'include',
         method: 'PUT',
-        body: JSON.stringify(updateRetweet),
+        body: JSON.stringify({ postId }),
         headers: {
           'Content-Type': 'application/json'
         }
-      }, fetchRetweetNum, retweetTarget)
+      })
+        .then(res => {
+          return res.json()
+        })
+        .then(returnedValue => {
+          const retweetNums = document.querySelector('.retweetNums')
+          const retweetButton = document.querySelector('.retweetButton')
+          retweetNums.value = returnedValue
+          if (retweetButton.classList.contains('active')) {
+            retweetButton.classList.remove('active')
+          } else {
+            retweetButton.classList.add('active')
+          }
+        })
+        .catch(e => {
+          console.log('retweetPost fail: ', e)
+        })
     }
   }
 
@@ -120,62 +154,23 @@ postsContainer.addEventListener('click', (e) => {
 
   if (deletePostTarget) {
     const postId = getPostIdFromElement(deletePostTarget)
+    console.log(postId)
 
     if (postId !== undefined) {
-      const deletePost = {
-        postId
-      }
-
       const rootElement = getRootFromElement(deletePostTarget)
       rootElement.remove()
 
-      fetchRetry(`api/posts/${postId}/delete`, 500, 2, {
+      fetch('api/posts/delete', {
         credentials: 'include',
         method: 'DELETE',
-        body: JSON.stringify(deletePost),
+        body: JSON.stringify({ postId }),
         headers: {
           'Content-Type': 'application/json'
         }
-      }, deletePostHandler)
+      })
     }
   }
 }, false)
-
-async function fetchLikeNum (result, likeTarget) {
-  if (result.message === 'jwt expired') {
-    await fetchNewAccessToken() // if access token expired, fetch the new one
-  }
-
-  const num = likeTarget.querySelector('.likeNums')
-  num.innerHTML = result.like_nums || ''
-
-  if (result.isAlreadyLike === true) {
-    likeTarget.classList.add('active')
-  } else if (result.isAlreadyLike === false) {
-    likeTarget.classList.remove('active')
-  }
-}
-
-async function fetchRetweetNum (result, retweetTarget) {
-  if (result.message === 'jwt expired') {
-    await fetchNewAccessToken() // if access token expired, fetch the new one
-  }
-
-  const num = retweetTarget.querySelector('.retweetNums')
-  num.innerHTML = result.retweet_nums || ''
-
-  if (result.isAlreadyRetweet === true) {
-    retweetTarget.classList.add('active')
-  } else if (result.isAlreadyRetweet === false) {
-    retweetTarget.classList.remove('active')
-  }
-}
-
-async function deletePostHandler (result) {
-  if (result.message === 'jwt expired') {
-    await fetchNewAccessToken() // if access token expired, fetch the new one
-  }
-}
 
 function getPostIdFromElement (element) {
   const isRoot = element.classList.contains('post')
