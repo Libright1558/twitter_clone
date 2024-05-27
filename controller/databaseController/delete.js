@@ -4,7 +4,7 @@ import deleteString from '../../database/queryString/deletePost.js'
 import queryPost from '../../database/queryString/queryPost.js'
 import { QueryTypes } from 'sequelize'
 
-const deletePost = async (postId) => {
+const removePost = async (postId) => {
   try {
     await sequelize.query(deleteString.deletePost, {
       bind: [postId],
@@ -78,7 +78,7 @@ const removeRetweet = async (param) => {
 }
 
 export {
-  deletePost,
+  removePost,
   removeLike,
   removeRetweet
 }
