@@ -56,7 +56,7 @@ const delKey = async (key) => {
   }
 }
 
-const delField = async (key, field) => {
+const delHashField = async (key, field) => {
   await client.connect()
 
   try {
@@ -80,5 +80,5 @@ export {
 
   // delete key
   delKey,
-  delField
+  delHashField
 }
