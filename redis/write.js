@@ -1,5 +1,5 @@
 import { client } from './cache.js'
-import { writePostInfo, writeUserInfo } from './transaction.js'
+import { writePostInfo, writeUserInfo, writePostIdArray } from './transaction.js'
 
 const writePersonalData = async (userId, userInfo) => {
   await client.connect()
@@ -25,7 +25,21 @@ const postWriteBack = async (userId, postInfoObj, listArray) => {
   }
 }
 
+const setPostIdArray = async (userId, member) => {
+  await client.connect()
+
+  try {
+    const result = await writePostIdArray(client, userId, member)
+    return result
+  } catch (err) {
+    console.log('redis writeSortedPostIdArray error', err)
+  } finally {
+    await client.quit()
+  }
+}
+
 export {
   writePersonalData,
-  postWriteBack
+  postWriteBack,
+  setPostIdArray
 }
