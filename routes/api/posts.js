@@ -3,13 +3,13 @@ import postController from '../../controller/postController.js'
 const router = express.Router()
 
 router.route('/')
-  .get(postController.getPost)
-  .post(postController.postThePost)
+  .get(express.json(), postController.getPost)
+  .post(express.json(), postController.writePost)
 
-router.put('/:id/like', postController.likePost)
+router.put('/like', express.json(), postController.updateLike)
 
-router.put('/:id/retweet', postController.retweetPost)
+router.put('/retweet', express.json(), postController.updateRetweet)
 
-router.delete('/:id/delete', postController.deletePost)
+router.delete('/delete', express.json(), postController.deletePost)
 
 export default router
