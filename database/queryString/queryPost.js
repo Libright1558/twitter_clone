@@ -23,13 +23,13 @@ const postData =
 
 const selfLike =
 `CREATE TEMP TABLE IF NOT EXISTS "sL" (
-    "selfLike" BOOLEAN,
+    "selfLike" INT,
     "postId" UUID
 ) ON COMMIT DROP`
 
 const selfRetweet =
 `CREATE TEMP TABLE IF NOT EXISTS "sR" (
-    "selfRetweet" BOOLEAN,
+    "selfRetweet" INT,
     "postId" UUID
 ) ON COMMIT DROP`
 
@@ -64,8 +64,8 @@ const appendSelfLike =
 `INSERT INTO "sL" ("postId", "selfLike")
 SELECT posd."postId",
 (CASE
-    WHEN like_table.username IS NULL THEN false
-    ELSE true
+    WHEN like_table.username IS NULL THEN 0
+    ELSE 1
 END)
 FROM posd
 LEFT JOIN like_table ON posd."postId" = like_table."postId" AND like_table.username = $1`
@@ -74,8 +74,8 @@ const appendSelfRetweet =
 `INSERT INTO "sR" ("postId", "selfRetweet")
 SELECT posd."postId", 
 (CASE
-    WHEN retweet_table.username IS NULL THEN false
-    ELSE true
+    WHEN retweet_table.username IS NULL THEN 0
+    ELSE 1
 END)
 FROM posd
 LEFT JOIN retweet_table ON posd."postId" = retweet_table."postId" AND retweet_table.username = $1`
@@ -102,11 +102,11 @@ const fetchRetweetNum =
 WHERE "postId" = $1`
 
 const fetchSelfLike =
-`SELECT "postId", "selfLike" FROM "sL"
+`SELECT "selfLike" FROM "sL"
 WHERE "postId" = $1`
 
 const fetchSelfRetweet =
-`SELECT "postId", "selfRetweet" FROM "sR"
+`SELECT "selfRetweet" FROM "sR"
 WHERE "postId" = $1`
 
 export default {
