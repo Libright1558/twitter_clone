@@ -23,8 +23,8 @@ block content
         var form = document.getElementById("registerForm")
 
         function validateForm() {
-        if(passwordField.value != passwordConfirmField.value) {
-            alert("Password do not match. Please try again.");
+            if(passwordField.value != passwordConfirmField.value) {
+                alert("Password do not match. Please try again.");
             }
             else {
                 form.submit();
