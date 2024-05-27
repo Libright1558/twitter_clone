@@ -82,7 +82,55 @@ const postInfo = async (username, fetchList) => {
   }
 }
 
+const selfLikeInfo = async (postId, username) => {
+  try {
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+
+      await client.query(queryPost.postData)
+      await client.query(queryPost.selfLike)
+      await client.query(queryPost.appendSelfLike, [username])
+      const postResult = await client.query(queryPost.fetchSelfLike, [postId])
+
+      await client.query('COMMIT')
+      return postResult
+    } catch (error) {
+      await client.query('ROLLBACK')
+    } finally {
+      client.release()
+    }
+  } catch (error) {
+    console.log('pgPool connection error: ', error)
+  }
+}
+
+const selfRetweetInfo = async (postId, username) => {
+  try {
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+
+      await client.query(queryPost.postData)
+      await client.query(queryPost.selfRetweet)
+      await client.query(queryPost.appendSelfRetweet, [username])
+      const postResult = await client.query(queryPost.fetchSelfRetweet, [postId])
+
+      await client.query('COMMIT')
+      return postResult
+    } catch (error) {
+      await client.query('ROLLBACK')
+    } finally {
+      client.release()
+    }
+  } catch (error) {
+    console.log('pgPool connection error: ', error)
+  }
+}
+
 export {
   userInfo,
-  postInfo
+  postInfo,
+  selfLikeInfo,
+  selfRetweetInfo
 }
