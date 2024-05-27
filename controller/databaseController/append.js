@@ -13,11 +13,11 @@ import { QueryTypes } from 'sequelize'
 */
 const insertPost = async (postData) => {
   try {
-    const [postId, metadata] = await sequelize.query(appendPost.appendPostData, {
+    const [postResult, metadata] = await sequelize.query(appendPost.appendPostData, {
       bind: [postData.postby, postData.content],
       type: QueryTypes.INSERT
     })
-    const result = [postId, metadata]
+    const result = [postResult, metadata]
     return result
   } catch (err) {
     console.log('appendPost error: ', err)
