@@ -1,6 +1,6 @@
 const appendPostData =
 `INSERT INTO post_table(postby, content) VALUES($1, $2) 
-RETURNING "postId"`
+RETURNING "postId", "createdAt"`
 
 const addLike =
 `INSERT INTO like_table("postId", username) 
