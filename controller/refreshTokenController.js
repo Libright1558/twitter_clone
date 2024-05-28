@@ -13,9 +13,9 @@ const handleRefreshToken = async (req, res, next) => {
 
     const prikey = fs.readFileSync(process.env.private_key, 'utf8')
     const accessToken = jwt.sign(
-      { username: decoded.username },
+      { userId: decoded.userId, username: decoded.username },
       prikey,
-      { algorithm: 'RS256', expiresIn: '30s' }
+      { algorithm: 'RS256', expiresIn: '300s' }
     )
     res.cookie('access', accessToken, { httpOnly: true, sameSite: true, maxAge: 15 * 60 * 1000 })
     return res.end()
