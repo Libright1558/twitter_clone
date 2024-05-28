@@ -1,4 +1,4 @@
-import { client } from './cache.js'
+import { client } from './init.js'
 import { renewLikeNums, renewRetweetNums } from './transaction.js'
 
 /*
@@ -11,13 +11,10 @@ import { renewLikeNums, renewRetweetNums } from './transaction.js'
 * }
 */
 const updateLikeNums = async (postId, obj, expTime) => {
-  await client.connect()
   try {
     await renewLikeNums(client, postId, obj, expTime)
   } catch (error) {
     console.log('updateLikeNums error', error)
-  } finally {
-    await client.quit()
   }
 }
 
@@ -31,13 +28,10 @@ const updateLikeNums = async (postId, obj, expTime) => {
 * }
 */
 const updateRetweetNums = async (postId, obj, expTime) => {
-  await client.connect()
   try {
     await renewRetweetNums(client, postId, obj, expTime)
   } catch (error) {
     console.log('updateRetweetNums error', error)
-  } finally {
-    await client.quit()
   }
 }
 
