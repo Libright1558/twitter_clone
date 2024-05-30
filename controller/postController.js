@@ -132,7 +132,7 @@ const writePost = async (req, res, next) => {
 
 const updateLike = async (req, res, next) => {
   try {
-    const postId = req.body
+    const postId = req.body?.postId
     const username = req.username
 
     const param = {
@@ -164,7 +164,7 @@ const updateLike = async (req, res, next) => {
 
 const updateRetweet = async (req, res, next) => {
   try {
-    const postId = req.body
+    const postId = req.body?.postId
     const username = req.username
 
     const param = {
@@ -197,8 +197,7 @@ const updateRetweet = async (req, res, next) => {
 
 const deletePost = async (req, res, next) => {
   try {
-    const postId = req.body
-    console.log(postId)
+    const postId = req.body?.postId
     const userId = req.userId
 
     await removePost(postId)
