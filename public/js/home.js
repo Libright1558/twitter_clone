@@ -1,13 +1,11 @@
 import common from './common.js'
+import { fetchWrapper } from './helper/retry.js'
 
 document.addEventListener('DOMContentLoaded', () => {
-  fetch('/api/posts', {
+  fetchWrapper('/api/posts', {
     credentials: 'include',
     method: 'GET'
-  })
-    .then((results) => {
-      return results.json()
-    })
+  }, 3000, 3) // if failed, wait 3 secs, retry three times
     .then((returnedValue) => {
       handlePostManage(returnedValue)
     })
