@@ -40,7 +40,7 @@ submitPostButton.addEventListener('click', () => {
         }
         const html = createPostHtml(resultPost)
         const postsContainer = document.querySelector('.postsContainer')
-        postsContainer.insertAdjacentHTML('beforeend', html)
+        postsContainer.insertAdjacentHTML('afterbegin', html)
       })
       .catch(e => {
         console.log('postText fail: ', e)
