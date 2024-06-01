@@ -121,6 +121,7 @@ const writePost = async (req, res, next) => {
     postData.postby = req.username
     const result = await insertPost(postData) // result = [ [ { postId, createdAt } ], metadata ]
     const returnedValue = result[0][0] // { postId, createdAt }
+    returnedValue.createdAt = moment(returnedValue.createdAt).format('YYYY-MM-DD HH:mm:ss')
 
     await delKey(userId + '_postIdArray')
 
