@@ -104,8 +104,12 @@ const getPost = async (req, res, next) => {
 
     obj.userPosts = userPosts
 
-    await setPostIdArray(userId, PostIdArray)
-    await postWriteBack(userId, postNestObj, fetchList)
+    const promise = [
+      setPostIdArray(userId, PostIdArray),
+      postWriteBack(userId, postNestObj, fetchList)
+    ]
+
+    await Promise.allSettled(promise)
     await setPostExpNX(userId, 300)
 
     res.status(200).send(JSON.stringify(obj))
@@ -196,13 +200,17 @@ const updateRetweet = async (req, res, next) => {
   }
 }
 
-const deletePost = async (req, res, next) => {
+const deletePost = (req, res, next) => {
   try {
     const postId = req.body?.postId
     const userId = req.userId
 
-    await removePost(postId)
-    await removePostCache(userId, postId)
+    const promise = [
+      removePost(postId),
+      removePostCache(userId, postId)
+    ]
+
+    Promise.allSettled(promise)
   } catch (error) {
     console.log('deletePost error', error)
   }
