@@ -20,25 +20,33 @@ const getUserInfo = async (client, userId) => {
 }
 
 const getPostInfo = async (client, userId, postIdArray) => {
-  const [postOwner, content, createdAt, likeNums, retweetNums, selfLike, selfRetweet] = await client
+  const [content, createdAt, likeNums, retweetNums, selfLike, selfRetweet, postOwner,
+    firstname, lastname, profilepic
+  ] = await client
     .multi()
-    .HMGET('postOwner', postIdArray)
     .HMGET('content', postIdArray)
     .HMGET('createdAt', postIdArray)
     .HMGET('likeNums', postIdArray)
     .HMGET('retweetNums', postIdArray)
     .HMGET(userId + '_selfLike', postIdArray)
     .HMGET(userId + '_selfRetweet', postIdArray)
+    .HMGET('postOwner', postIdArray)
+    .HMGET('firstname', postIdArray)
+    .HMGET('lastname', postIdArray)
+    .HMGET('profilepic', postIdArray)
     .exec()
 
   const obj = {
-    postOwner,
     content,
     createdAt,
     likeNums,
     retweetNums,
     selfLike,
-    selfRetweet
+    selfRetweet,
+    postOwner,
+    firstname,
+    lastname,
+    profilepic
   }
 
   return obj
@@ -88,12 +96,11 @@ const writeUserInfo = async (client, userId, userInfo) => {
 */
 const writePostInfo = async (client, userId, postNestObj, listArray) => {
   if (!listArray[0] || !listArray[1]) {
-    await client
-      .multi()
-      .HSET('postOwner', postNestObj.postOwner)
-      .HSET('content', postNestObj.content)
-      .HSET('createdAt', postNestObj.createdAt)
-      .exec()
+    await client.HSET('content', postNestObj.content)
+  }
+
+  if (!listArray[1]) {
+    await client.HSET('createdAt', postNestObj.createdAt)
   }
 
   if (!listArray[2]) {
@@ -110,6 +117,22 @@ const writePostInfo = async (client, userId, postNestObj, listArray) => {
 
   if (!listArray[5]) {
     await client.HSET(userId + '_selfRetweet', postNestObj.selfRetweet)
+  }
+
+  if (!listArray[6]) {
+    await client.HSET('postOwner', postNestObj.postOwner)
+  }
+
+  if (!listArray[7]) {
+    await client.HSET('firstname', postNestObj.postOwner)
+  }
+
+  if (!listArray[8]) {
+    await client.HSET('lastname', postNestObj.postOwner)
+  }
+
+  if (!listArray[9]) {
+    await client.HSET('profilepic', postNestObj.postOwner)
   }
 }
 
