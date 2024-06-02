@@ -38,11 +38,9 @@ const appendLike = async (param) => {
       await client.query('BEGIN')
       const createdAt = await client.query(appendPost.addLike, [param.postId, param.username])
 
-      await client.query(queryPost.postData)
       await client.query(queryPost.likeNum)
 
-      await client.query(queryPost.appendPostId, [param.username])
-      await client.query(queryPost.appendLikeNum)
+      await client.query(queryPost.appendLikeNum, [param.username])
       const likeNumsInfo = await client.query(queryPost.fetchLikeNum, [param.postId])
       await client.query('COMMIT')
 
@@ -76,11 +74,9 @@ const appendRetweet = async (param) => {
       await client.query('BEGIN')
       const createdAt = await client.query(appendPost.addRetweet, [param.postId, param.username])
 
-      await client.query(queryPost.postData)
       await client.query(queryPost.retweetNum)
 
-      await client.query(queryPost.appendPostId, [param.username])
-      await client.query(queryPost.appendRetweetNum)
+      await client.query(queryPost.appendRetweetNum, [param.username])
       const retweetNumsInfo = await client.query(queryPost.fetchRetweetNum, [param.postId])
       await client.query('COMMIT')
 
