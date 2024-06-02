@@ -130,7 +130,7 @@ const writePostIdArray = async (client, userId, member) => {
 const renewLikeNums = async (client, postId, obj, expTime) => {
   await client
     .multi()
-    .SETNX(postId + 'postLikeNums', obj.timestamp)
+    .SET(postId + 'postLikeNums', obj.timestamp, 'NX')
     .expire(postId + 'postLikeNums', expTime)
     .HSETNX('retweetNums', postId, obj.value)
     .exec()
@@ -140,7 +140,7 @@ const renewLikeNums = async (client, postId, obj, expTime) => {
   if (timestamp <= obj.timestamp) {
     await client
       .multi()
-      .SETNX(postId + 'postLikeNums', obj.timestamp)
+      .SET(postId + 'postLikeNums', obj.timestamp)
       .expire(postId + 'postLikeNums', expTime)
       .HSET('likeNums', [[postId, obj.value]])
       .exec()
@@ -161,7 +161,7 @@ const renewLikeNums = async (client, postId, obj, expTime) => {
 const renewRetweetNums = async (client, postId, obj, expTime) => {
   await client
     .multi()
-    .SETNX(postId + 'postRetweetNums', obj.timestamp)
+    .SET(postId + 'postRetweetNums', obj.timestamp, 'NX')
     .expire(postId + 'postRetweetNums', expTime)
     .HSETNX('retweetNums', postId, obj.value)
     .exec()
@@ -171,7 +171,7 @@ const renewRetweetNums = async (client, postId, obj, expTime) => {
   if (timestamp <= obj.timestamp) {
     await client
       .multi()
-      .SETNX(postId + 'postRetweetNums', obj.timestamp)
+      .SET(postId + 'postRetweetNums', obj.timestamp)
       .expire(postId + 'postRetweetNums', expTime)
       .HSET('retweetNums', [[postId, obj.value]])
       .exec()
