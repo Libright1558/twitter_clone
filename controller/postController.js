@@ -25,16 +25,16 @@ const getPost = async (req, res, next) => {
       userPosts: post
     }
 
-    const fetchList = [0, 0, 0, 0, 0, 0]
+    const fetchList = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     if (postIdArray.length !== 0) {
-      if (post.postOwner[0] !== null && post.content[0] !== null) {
+      if (post.content[0] !== null) {
         fetchList[0] = 1
       }
 
-      // if (post.createdAt) {
-      //   fetchList[1] = 1
-      // }  Will be removed later
+      if (post.createdAt[0] !== null) {
+        fetchList[1] = 1
+      }
 
       if (post.likeNums[0] !== null) {
         fetchList[2] = 1
@@ -51,55 +51,84 @@ const getPost = async (req, res, next) => {
       if (post.selfRetweet[0] !== null) {
         fetchList[5] = 1
       }
+
+      if (post.postOwner[0] !== null) {
+        fetchList[6] = 1
+      }
+
+      if (post.firstname[0] !== null) {
+        fetchList[7] = 1
+      }
+
+      if (post.lastname[0] !== null) {
+        fetchList[8] = 1
+      }
+
+      if (post.profilepic[0] !== null) {
+        fetchList[9] = 1
+      }
     }
 
     let userPosts = await postInfo(username, fetchList)
 
-    const userPostsLen = userPosts.rows ? userPosts.rows.length : 0
+    const userPostsLen = userPosts.rows.length !== 0 ? userPosts.rows.length : 0
 
     if (userPostsLen !== 0) {
       userPosts = await vanillaSort(userPosts.rows, 'createdAt')
     }
 
-    const postOwner = []
     const content = []
     const createdAt = []
     const likeNums = []
     const retweetNums = []
     const selfLike = []
     const selfRetweet = []
+    const postOwner = []
+    const firstname = []
+    const lastname = []
+    const profilepic = []
 
     const PostIdArray = []
 
     for (let i = 0; i < userPostsLen; i++) {
       userPosts[i].createdAt = moment(userPosts[i].createdAt).format('YYYY-MM-DD HH:mm:ss')
 
-      userPosts[i].postby = fetchList[0] !== 0 ? post.postOwner[i] : userPosts[i].postby
       userPosts[i].content = fetchList[0] !== 0 ? post.content[i] : userPosts[i].content
+      userPosts[i].createdAt = fetchList[1] !== 0 ? post.createdAt[i] : userPosts[i].createdAt
       userPosts[i].likeNum = fetchList[2] !== 0 ? post.likeNums[i] : userPosts[i].likeNum
       userPosts[i].retweetNum = fetchList[3] !== 0 ? post.retweetNums[i] : userPosts[i].retweetNum
       userPosts[i].selfLike = fetchList[4] !== 0 ? post.selfLike[i] : userPosts[i].selfLike
       userPosts[i].selfRetweet = fetchList[5] !== 0 ? post.selfRetweet[i] : userPosts[i].selfRetweet
+      userPosts[i].postby = fetchList[6] !== 0 ? post.postOwner[i] : userPosts[i].postby
+      userPosts[i].firstname = fetchList[7] !== 0 ? post.firstname[i] : userPosts[i].firstname
+      userPosts[i].lastname = fetchList[8] !== 0 ? post.lastname[i] : userPosts[i].lastname
+      userPosts[i].profilepic = fetchList[9] !== 0 ? post.profilepic[i] : userPosts[i].profilepic
 
-      postOwner.push([userPosts[i].postId, userPosts[i].postby])
       content.push([userPosts[i].postId, userPosts[i].content])
       createdAt.push([userPosts[i].postId, userPosts[i].createdAt])
       likeNums.push([userPosts[i].postId, userPosts[i].likeNum])
       retweetNums.push([userPosts[i].postId, userPosts[i].retweetNum])
       selfLike.push([userPosts[i].postId, userPosts[i].selfLike])
       selfRetweet.push([userPosts[i].postId, userPosts[i].selfRetweet])
+      postOwner.push([userPosts[i].postId, userPosts[i].postby])
+      firstname.push([userPosts[i].postId, userPosts[i].firstname])
+      lastname.push([userPosts[i].postId, userPosts[i].lastname])
+      profilepic.push([userPosts[i].postId, userPosts[i].profilepic])
 
       PostIdArray.push(userPosts[i].postId)
     }
 
     const postNestObj = {
-      postOwner,
       content,
       createdAt,
       likeNums,
       retweetNums,
       selfLike,
-      selfRetweet
+      selfRetweet,
+      postOwner,
+      firstname,
+      lastname,
+      profilepic
     }
 
     obj.userPosts = userPosts
