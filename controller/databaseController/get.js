@@ -26,7 +26,11 @@ const userInfo = async (userId) => {
 *  likeNums,
 *  retweetNums,
 *  selfLike,
-*  selfRetweet
+*  selfRetweet,
+*  postby,
+*  firstname,
+*  lastname,
+*  profilepic
 * ]
 *
 * To check which one is absent in the redis cache
@@ -39,24 +43,35 @@ const postInfo = async (username, fetchList) => {
     try {
       await client.query('BEGIN')
 
-      await client.query(queryPost.postData)
-      await client.query(queryPost.likeNum)
-      await client.query(queryPost.retweetNum)
-      await client.query(queryPost.selfLike)
-      await client.query(queryPost.selfRetweet)
+      const promise = [
+        client.query(queryPost.postOwner),
+        client.query(queryPost.postContent),
+        client.query(queryPost.postTime),
+        client.query(queryPost.postFirstname),
+        client.query(queryPost.postLastname),
+        client.query(queryPost.postProfilepic),
+        client.query(queryPost.likeNum),
+        client.query(queryPost.retweetNum),
+        client.query(queryPost.selfLike),
+        client.query(queryPost.selfRetweet)
+      ]
 
-      if (!fetchList[0] || !fetchList[1]) {
-        await client.query(queryPost.appendPostData, [username])
-      } else {
-        await client.query(queryPost.appendPostId, [username])
+      await Promise.allSettled(promise)
+
+      if (!fetchList[0]) {
+        await client.query(queryPost.appendPostContent, [username])
+      }
+
+      if (!fetchList[1]) {
+        await client.query(queryPost.appendPostTime, [username])
       }
 
       if (!fetchList[2]) {
-        await client.query(queryPost.appendLikeNum)
+        await client.query(queryPost.appendLikeNum, [username])
       }
 
       if (!fetchList[3]) {
-        await client.query(queryPost.appendRetweetNum)
+        await client.query(queryPost.appendRetweetNum, [username])
       }
 
       if (!fetchList[4]) {
@@ -65,6 +80,22 @@ const postInfo = async (username, fetchList) => {
 
       if (!fetchList[5]) {
         await client.query(queryPost.appendSelfRetweet, [username])
+      }
+
+      if (!fetchList[6]) {
+        await client.query(queryPost.appendPostOwner, [username])
+      }
+
+      if (!fetchList[7]) {
+        await client.query(queryPost.appendPostFirstname, [username])
+      }
+
+      if (!fetchList[8]) {
+        await client.query(queryPost.appendPostLastname, [username])
+      }
+
+      if (!fetchList[9]) {
+        await client.query(queryPost.appendPostProfilepic, [username])
       }
 
       const postResult = await client.query(queryPost.fetchPost)
@@ -88,8 +119,8 @@ const selfLikeInfo = async (postId, username) => {
     try {
       await client.query('BEGIN')
 
-      await client.query(queryPost.postData)
       await client.query(queryPost.selfLike)
+
       await client.query(queryPost.appendSelfLike, [username])
       const postResult = await client.query(queryPost.fetchSelfLike, [postId])
 
@@ -111,8 +142,8 @@ const selfRetweetInfo = async (postId, username) => {
     try {
       await client.query('BEGIN')
 
-      await client.query(queryPost.postData)
       await client.query(queryPost.selfRetweet)
+
       await client.query(queryPost.appendSelfRetweet, [username])
       const postResult = await client.query(queryPost.fetchSelfRetweet, [postId])
 
