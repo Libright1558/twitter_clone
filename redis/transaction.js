@@ -166,6 +166,7 @@ const renewRetweetNums = async (client, postId, obj, expTime) => {
     .HSETNX('retweetNums', postId, obj.value)
     .exec()
 
+  await client.WATCH(postId + 'postRetweetNums')
   const timestamp = await client.GET(postId + 'postRetweetNums')
   if (timestamp <= obj.timestamp) {
     await client
