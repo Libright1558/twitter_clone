@@ -66,17 +66,19 @@ const postProfilepic =
 */
 const appendLikeNum =
 `INSERT INTO "lN" ("postId", "likeNum")
-SELECT "postId", COUNT(like_table.username)
-FROM post_table WHERE postby = $1
-LEFT JOIN like_table ON "postId" = like_table."postId"
-GROUP BY "postId"`
+SELECT post_table."postId", COUNT(like_table.username)
+FROM post_table
+LEFT JOIN like_table ON post_table."postId" = like_table."postId"
+WHERE postby = $1
+GROUP BY post_table."postId"`
 
 const appendRetweetNum =
 `INSERT INTO "rN" ("postId", "retweetNum")
-SELECT "postId", COUNT(retweet_table.username)
-FROM post_table WHERE postby = $1 
-LEFT JOIN retweet_table ON "postId" = retweet_table."postId"
-GROUP BY "postId"`
+SELECT post_table."postId", COUNT(retweet_table.username)
+FROM post_table 
+LEFT JOIN retweet_table ON post_table."postId" = retweet_table."postId"
+WHERE postby = $1
+GROUP BY post_table."postId"`
 
 const appendPostOwner =
 `INSERT INTO "pOwn" ("postId", postby)
@@ -95,49 +97,54 @@ FROM post_table WHERE postby = $1`
 
 const appendSelfLike =
 `INSERT INTO "sL" ("postId", "selfLike")
-SELECT "postId",
+SELECT post_table."postId",
 (CASE
     WHEN like_table.username IS NULL THEN 0
     ELSE 1
 END)
-FROM post_table WHERE postby = $1
-LEFT JOIN like_table ON "postId" = like_table."postId" AND postby = like_table.username`
+FROM post_table
+LEFT JOIN like_table ON post_table."postId" = like_table."postId" AND postby = like_table.username
+WHERE postby = $1`
 
 const appendSelfRetweet =
 `INSERT INTO "sR" ("postId", "selfRetweet")
-SELECT "postId", 
+SELECT post_table."postId", 
 (CASE
     WHEN retweet_table.username IS NULL THEN 0
     ELSE 1
 END)
-FROM post_table WHERE postby = $1
-LEFT JOIN retweet_table ON "postId" = retweet_table."postId" AND postby = retweet_table.username`
+FROM post_table
+LEFT JOIN retweet_table ON post_table."postId" = retweet_table."postId" AND postby = retweet_table.username
+WHERE postby = $1`
 
 const appendPostFirstname =
 `INSERT INTO "pFn" ("postId", firstname)
 SELECT "postId", firstname
-FROM post_table WHERE postby = $1
-INNER JOIN user_table ON postby = username`
+FROM post_table
+INNER JOIN user_table ON postby = username
+WHERE postby = $1`
 
 const appendPostLastname =
 `INSERT INTO "pLn" ("postId", lastname)
 SELECT "postId", lastname
-FROM post_table WHERE postby = $1
-INNER JOIN user_table ON postby = username`
+FROM post_table 
+INNER JOIN user_table ON postby = username
+WHERE postby = $1`
 
 const appendPostProfilepic =
 `INSERT INTO "postPropic" ("postId", profilepic)
 SELECT "postId", profilepic
-FROM post_table WHERE postby = $1
-INNER JOIN user_table ON postby = username`
+FROM post_table 
+INNER JOIN user_table ON postby = username
+WHERE postby = $1`
 
 /*
 * fetch Post data
 */
 const fetchPost =
-`SELECT postby, content, "createdAt", post_table."postId", "likeNum", "retweetNum", "selfRetweet", "selfLike", 
+`SELECT "pOwn".postby, "pCon".content, "pT"."createdAt", post_table."postId", "likeNum", "retweetNum", "selfRetweet", "selfLike", 
 firstname, lastname, profilepic
-FROM post_table WHERE postby = $1
+FROM post_table
 LEFT JOIN "lN" ON post_table."postId" = "lN"."postId"
 LEFT JOIN "rN" ON post_table."postId" = "rN"."postId"
 LEFT JOIN "sL" ON post_table."postId" = "sL"."postId"
@@ -147,7 +154,8 @@ LEFT JOIN "pCon" ON post_table."postId" = "pCon"."postId"
 LEFT JOIN "pT" ON post_table."postId" = "pT"."postId"
 LEFT JOIN "pFn" ON post_table."postId" = "pFn"."postId"
 LEFT JOIN "pLn" ON post_table."postId" = "pLn"."postId"
-LEFT JOIN "postPropic" ON post_table."postId" = "postPropic"."postId"`
+LEFT JOIN "postPropic" ON post_table."postId" = "postPropic"."postId"
+WHERE post_table.postby = $1`
 
 const fetchLikeNum =
 `SELECT "postId", "likeNum" FROM "lN"
