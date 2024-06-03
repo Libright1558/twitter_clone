@@ -7,7 +7,8 @@ The purpose of this project is to serve as my personal practice for planning sys
 
 ---
 ### Redis Schema
-![redisDiagram](https://github.com/Libright1558/twitter_clone/assets/19789411/d28446b2-a24b-4851-98b1-50f48ef09852)
+![redisDiagram](https://github.com/Libright1558/twitter_clone/assets/19789411/8f83aa34-b5b5-4b8e-9599-fb57d4d2a9d4)
+
 
 
 
