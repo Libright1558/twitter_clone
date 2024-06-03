@@ -98,7 +98,7 @@ const postInfo = async (username, fetchList) => {
         await client.query(queryPost.appendPostProfilepic, [username])
       }
 
-      const postResult = await client.query(queryPost.fetchPost)
+      const postResult = await client.query(queryPost.fetchPost, [username])
 
       await client.query('COMMIT')
       return postResult
