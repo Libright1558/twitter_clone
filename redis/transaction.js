@@ -124,15 +124,15 @@ const writePostInfo = async (client, userId, postNestObj, listArray) => {
   }
 
   if (!listArray[7]) {
-    await client.HSET('firstname', postNestObj.postOwner)
+    await client.HSET('firstname', postNestObj.firstname)
   }
 
   if (!listArray[8]) {
-    await client.HSET('lastname', postNestObj.postOwner)
+    await client.HSET('lastname', postNestObj.lastname)
   }
 
   if (!listArray[9]) {
-    await client.HSET('profilepic', postNestObj.postOwner)
+    await client.HSET('profilepic', postNestObj.profilepic)
   }
 }
 
