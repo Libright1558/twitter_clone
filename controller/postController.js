@@ -74,6 +74,12 @@ const getPost = async (req, res, next) => {
     const userPostsLen = userPosts?.rows ? userPosts.rows.length : 0
 
     if (userPostsLen !== 0) {
+      if (fetchList[1] === 1) {
+        for (let iter = 0; iter < userPostsLen; ++iter) {
+          const index = postIdArray.indexOf(userPosts.rows[iter].postId)
+          userPosts.rows[iter].createdAt = post.createdAt[index]
+        }
+      }
       userPosts = await vanillaSort(userPosts.rows, 'createdAt')
     }
 
