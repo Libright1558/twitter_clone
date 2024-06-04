@@ -71,13 +71,16 @@ const writeUserInfo = async (client, userId, userInfo) => {
 /*
 * postNestObj =
 * {
-*  postOwner: [ [ postId1,'value1' ], [ postId2, 'value2' ], ... ],
 *  content: [ [ postId1,'value1' ], [ postId2, 'value2' ], ... ],
 *  createdAt: [ [ postId1,'value1' ], [ postId2, 'value2' ], ... ],
 *  likeNums: [ [ postId1, number1 ], [ postId2, number2 ], ... ],
 *  retweetNums: [ [ postId1, number1 ], [ postId2, number2 ], ... ],
 *  _selfLike: [ [ postId1, boolean1 ], [ postId2, boolean2 ], ... ],
 *  _selfRetweet: [ [ postId1, boolean1 ], [ postId2, boolean2 ], ... ]
+*  postOwner: [ [ postId1,'value1' ], [ postId2, 'value2' ], ... ],
+*  firstname: [ [ postId1,'value1' ], [ postId2, 'value2' ], ...],
+*  lastname: [ [ postId1,'value1' ], [ postId2, 'value2' ], ...],
+*  profilepic: [ [ postId1,'value1' ], [ postId2, 'value2' ], ...]
 * }
 *
 * listArray =
@@ -87,7 +90,11 @@ const writeUserInfo = async (client, userId, userInfo) => {
 *  likeNums,
 *  retweetNums,
 *  selfLike,
-*  selfRetweet
+*  selfRetweet,
+*  postOwner,
+*  firstname,
+*  lastname,
+*  profilepic
 * ]
 *
 * To check which one is absent in the redis cache
@@ -95,7 +102,7 @@ const writeUserInfo = async (client, userId, userInfo) => {
 * 0: absent, 1: present
 */
 const writePostInfo = async (client, userId, postNestObj, listArray) => {
-  if (!listArray[0] || !listArray[1]) {
+  if (!listArray[0]) {
     await client.HSET('content', postNestObj.content)
   }
 
