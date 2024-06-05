@@ -39,6 +39,13 @@ const userInfo = async (userId) => {
 */
 const postInfo = async (username, fetchList) => {
   try {
+    if (fetchList[0] === 1 && fetchList[1] === 1 &&
+      fetchList[2] === 1 && fetchList[3] === 1 &&
+      fetchList[4] === 1 && fetchList[5] === 1 &&
+      fetchList[6] === 1 && fetchList[7] === 1 &&
+      fetchList[8] === 1 && fetchList[9] === 1) {
+      return null
+    }
     const client = await pool.connect()
     try {
       await client.query('BEGIN')
