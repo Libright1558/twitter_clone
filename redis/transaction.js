@@ -167,15 +167,13 @@ const renewLikeNums = async (client, postId, obj, expTime) => {
 
   await client.WATCH(postId + 'postLikeNums')
   const timestamp = await client.GET(postId + 'postLikeNums')
-  if (timestamp <= obj.timestamp) {
+  if (timestamp && timestamp <= obj.timestamp) {
     await client
       .multi()
       .SET(postId + 'postLikeNums', obj.timestamp)
       .expire(postId + 'postLikeNums', expTime)
       .HSET('likeNums', [[postId, obj.value]])
       .exec()
-  } else {
-    client.UNWATCH(postId + 'postLikeNums')
   }
 }
 
@@ -198,15 +196,13 @@ const renewRetweetNums = async (client, postId, obj, expTime) => {
 
   await client.WATCH(postId + 'postRetweetNums')
   const timestamp = await client.GET(postId + 'postRetweetNums')
-  if (timestamp <= obj.timestamp) {
+  if (timestamp && timestamp <= obj.timestamp) {
     await client
       .multi()
       .SET(postId + 'postRetweetNums', obj.timestamp)
       .expire(postId + 'postRetweetNums', expTime)
       .HSET('retweetNums', [[postId, obj.value]])
       .exec()
-  } else {
-    client.UNWATCH(postId + 'postRetweetNums')
   }
 }
 
