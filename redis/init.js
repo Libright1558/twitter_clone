@@ -1,10 +1,10 @@
-import { createClient } from 'redis'
+import { createClient } from 'redis';
 
-const client = createClient()
-client.on('error', err => console.log('Redis Client Error', err))
+const client = createClient();
+client.on('error', err => console.log('Redis Client Error', err));
 client.connect()
-  .then(() => { console.log('redis connection succeed') })
+    .then(() => { console.log('redis connection succeed'); });
 
 export {
-  client
-}
+    client
+};
