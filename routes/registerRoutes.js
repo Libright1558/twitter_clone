@@ -1,9 +1,9 @@
-import express from 'express'
-import registerController from '../controller/registerController.js'
-const router = express.Router()
+import express from 'express';
+import registerController from '../controller/registerController.js';
+const router = express.Router();
 
 router.route('/')
-  .get(registerController.renderRegister)
-  .post(registerController.registAccount)
+    .get(registerController.renderRegister)
+    .post(registerController.registAccount);
 
-export default router
+export default router;
