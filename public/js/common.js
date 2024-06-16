@@ -1,57 +1,57 @@
-const Textarea = document.getElementById('postTextarea')
-const submitPostButton = document.getElementById('submitPostButton')
+const Textarea = document.getElementById('postTextarea');
+const submitPostButton = document.getElementById('submitPostButton');
 
 // enable the button if there are texts in the textarea
 Textarea.addEventListener('input', () => {
-  submitPostButton.disabled = Textarea.value.trim() === ''
-})
+    submitPostButton.disabled = Textarea.value.trim() === '';
+});
 
 // post texts in textarea
 submitPostButton.addEventListener('click', () => {
-  try {
-    const value = Textarea.value.trim()
-    const postText = {
-      content: value
+    try {
+        const value = Textarea.value.trim();
+        const postText = {
+            content: value
+        };
+        fetch('/api/posts', {
+            credentials: 'include',
+            body: JSON.stringify(postText),
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+            .then((res) => {
+                return res.json();
+            })
+            .then((returnedValue) => {
+                const resultPost = {
+                    firstName: userLoggedIn.firstname,
+                    lastName: userLoggedIn.lastname,
+                    profilePic: userLoggedIn.profilepic,
+                    timestamp: returnedValue.createdAt,
+                    postData: postText.content,
+                    postby: userLoggedIn.username,
+                    post_id: returnedValue.postId,
+                    likenum: 0,
+                    retweetnum: 0,
+                    isretweeted: false,
+                    isliked: false
+                };
+                const html = createPostHtml(resultPost);
+                const postsContainer = document.querySelector('.postsContainer');
+                postsContainer.insertAdjacentHTML('afterbegin', html);
+            })
+            .catch(e => {
+                console.log('postText fail: ', e);
+            });
+    } catch (e) {
+        console.log('Content param can not send with request', e);
+    } finally {
+        document.getElementById('postTextarea').value = '';
+        document.getElementById('submitPostButton').disabled = true;
     }
-    fetch('/api/posts', {
-      credentials: 'include',
-      body: JSON.stringify(postText),
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
-      .then((res) => {
-        return res.json()
-      })
-      .then((returnedValue) => {
-        const resultPost = {
-          firstName: userLoggedIn.firstname,
-          lastName: userLoggedIn.lastname,
-          profilePic: userLoggedIn.profilepic,
-          timestamp: returnedValue.createdAt,
-          postData: postText.content,
-          postby: userLoggedIn.username,
-          post_id: returnedValue.postId,
-          likenum: 0,
-          retweetnum: 0,
-          isretweeted: false,
-          isliked: false
-        }
-        const html = createPostHtml(resultPost)
-        const postsContainer = document.querySelector('.postsContainer')
-        postsContainer.insertAdjacentHTML('afterbegin', html)
-      })
-      .catch(e => {
-        console.log('postText fail: ', e)
-      })
-  } catch (e) {
-    console.log('Content param can not send with request', e)
-  } finally {
-    document.getElementById('postTextarea').value = ''
-    document.getElementById('submitPostButton').disabled = true
-  }
-})
+});
 
 // render the commentReplyText
 // const replyModal = document.getElementById('replyModal')
@@ -80,140 +80,140 @@ submitPostButton.addEventListener('click', () => {
 // })
 
 // button click handler
-const postsContainer = document.querySelector('.postsContainer')
+const postsContainer = document.querySelector('.postsContainer');
 
 postsContainer.addEventListener('click', (e) => {
-  const likeTarget = e.target.closest('.likeButton')
+    const likeTarget = e.target.closest('.likeButton');
 
-  // like button click handler
-  if (likeTarget) {
-    const postId = getPostIdFromElement(likeTarget)
-    if (postId !== undefined) {
-      fetch('api/posts/like', {
-        credentials: 'include',
-        method: 'PUT',
-        body: JSON.stringify({ postId }),
-        headers: {
-          'Content-Type': 'application/json'
+    // like button click handler
+    if (likeTarget) {
+        const postId = getPostIdFromElement(likeTarget);
+        if (postId !== undefined) {
+            fetch('api/posts/like', {
+                credentials: 'include',
+                method: 'PUT',
+                body: JSON.stringify({ postId }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(res => {
+                    return res.json();
+                })
+                .then(returnedValue => {
+                    const likeNums = document.querySelector('.likeNums');
+                    const likeButton = document.querySelector('.likeButton');
+                    likeNums.value = returnedValue;
+                    if (likeButton.classList.contains('active')) {
+                        likeButton.classList.remove('active');
+                    } else {
+                        likeButton.classList.add('active');
+                    }
+                })
+                .catch(e => {
+                    console.log('likePost fail: ', e);
+                });
         }
-      })
-        .then(res => {
-          return res.json()
-        })
-        .then(returnedValue => {
-          const likeNums = document.querySelector('.likeNums')
-          const likeButton = document.querySelector('.likeButton')
-          likeNums.value = returnedValue
-          if (likeButton.classList.contains('active')) {
-            likeButton.classList.remove('active')
-          } else {
-            likeButton.classList.add('active')
-          }
-        })
-        .catch(e => {
-          console.log('likePost fail: ', e)
-        })
     }
-  }
 
-  // retweet button click handler
-  const retweetTarget = e.target.closest('.retweetButton')
+    // retweet button click handler
+    const retweetTarget = e.target.closest('.retweetButton');
 
-  if (retweetTarget) {
-    const postId = getPostIdFromElement(retweetTarget)
-    if (postId !== undefined) {
-      fetch('api/posts/retweet', {
-        credentials: 'include',
-        method: 'PUT',
-        body: JSON.stringify({ postId }),
-        headers: {
-          'Content-Type': 'application/json'
+    if (retweetTarget) {
+        const postId = getPostIdFromElement(retweetTarget);
+        if (postId !== undefined) {
+            fetch('api/posts/retweet', {
+                credentials: 'include',
+                method: 'PUT',
+                body: JSON.stringify({ postId }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(res => {
+                    return res.json();
+                })
+                .then(returnedValue => {
+                    const retweetNums = document.querySelector('.retweetNums');
+                    const retweetButton = document.querySelector('.retweetButton');
+                    retweetNums.value = returnedValue;
+                    if (retweetButton.classList.contains('active')) {
+                        retweetButton.classList.remove('active');
+                    } else {
+                        retweetButton.classList.add('active');
+                    }
+                })
+                .catch(e => {
+                    console.log('retweetPost fail: ', e);
+                });
         }
-      })
-        .then(res => {
-          return res.json()
-        })
-        .then(returnedValue => {
-          const retweetNums = document.querySelector('.retweetNums')
-          const retweetButton = document.querySelector('.retweetButton')
-          retweetNums.value = returnedValue
-          if (retweetButton.classList.contains('active')) {
-            retweetButton.classList.remove('active')
-          } else {
-            retweetButton.classList.add('active')
-          }
-        })
-        .catch(e => {
-          console.log('retweetPost fail: ', e)
-        })
     }
-  }
 
-  // delete post button click handler
-  const deletePostTarget = e.target.closest('.deletePostButton')
+    // delete post button click handler
+    const deletePostTarget = e.target.closest('.deletePostButton');
 
-  if (deletePostTarget) {
-    const postId = getPostIdFromElement(deletePostTarget)
-    console.log(postId)
+    if (deletePostTarget) {
+        const postId = getPostIdFromElement(deletePostTarget);
+        console.log(postId);
 
-    if (postId !== undefined) {
-      const rootElement = getRootFromElement(deletePostTarget)
-      rootElement.remove()
+        if (postId !== undefined) {
+            const rootElement = getRootFromElement(deletePostTarget);
+            rootElement.remove();
 
-      fetch('api/posts/delete', {
-        credentials: 'include',
-        method: 'DELETE',
-        body: JSON.stringify({ postId }),
-        headers: {
-          'Content-Type': 'application/json'
+            fetch('api/posts/delete', {
+                credentials: 'include',
+                method: 'DELETE',
+                body: JSON.stringify({ postId }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
         }
-      })
     }
-  }
-}, false)
+}, false);
 
 function getPostIdFromElement (element) {
-  const isRoot = element.classList.contains('post')
-  const rootElement = isRoot === true ? element : element.closest('.post')
-  const postId = rootElement.dataset.id
+    const isRoot = element.classList.contains('post');
+    const rootElement = isRoot === true ? element : element.closest('.post');
+    const postId = rootElement.dataset.id;
 
-  return postId
+    return postId;
 }
 
 function getRootFromElement (element) {
-  const isRoot = element.classList.contains('post')
-  const rootElement = isRoot === true ? element : element.closest('.post')
+    const isRoot = element.classList.contains('post');
+    const rootElement = isRoot === true ? element : element.closest('.post');
 
-  return rootElement
+    return rootElement;
 }
 
 function createPostHtml (result) {
-  const fullName = result.firstName + ' ' + result.lastName
+    const fullName = result.firstName + ' ' + result.lastName;
 
-  const isLiked = result.isliked
-  const likeButtonActiveClass = isLiked === true ? 'active' : ''
-  const isRetweeted = result.isretweeted
-  const retweetButtonActiveClass = isRetweeted === true ? 'active' : ''
+    const isLiked = result.isliked;
+    const likeButtonActiveClass = isLiked === true ? 'active' : '';
+    const isRetweeted = result.isretweeted;
+    const retweetButtonActiveClass = isRetweeted === true ? 'active' : '';
 
-  let retweetText = ''
-  if (isRetweeted === true) {
-    retweetText = `<span>
+    let retweetText = '';
+    if (isRetweeted === true) {
+        retweetText = `<span>
                             <i class="fa-solid fa-retweet"></i>
                             Retweeted by<a href=''>@${userLoggedIn.username}</a>
-                        </span>`
-  }
+                        </span>`;
+    }
 
-  let deletePostButton = ''
-  const hasAuthorization = true
-  if (hasAuthorization === true) {
-    deletePostButton = `<div class='deletePostContainer'>
+    let deletePostButton = '';
+    const hasAuthorization = true;
+    if (hasAuthorization === true) {
+        deletePostButton = `<div class='deletePostContainer'>
                                 <button class='deletePostButton'>
                                 <i class="fa-regular fa-trash-can"></i> <!-- This is an icon -->
                                 </button>
-                            </div>`
-  }
+                            </div>`;
+    }
 
-  return `<div class='post' data-id='${result.post_id}'>
+    return `<div class='post' data-id='${result.post_id}'>
                 <div class='postActionContainer'>
                     ${retweetText}
                 </div>
@@ -252,9 +252,9 @@ function createPostHtml (result) {
                         </div>
                     </div>
                 </div>
-            </div>`
-};
+            </div>`;
+}
 
 export default {
-  createPostHtml
-}
+    createPostHtml
+};

@@ -1,10 +1,10 @@
 const gainNewAccessToken = () => {
-  return fetch('/refresh', {
-    credentials: 'include',
-    method: 'GET'
-  })
-}
+    return fetch('/refresh', {
+        credentials: 'include',
+        method: 'GET'
+    });
+};
 
 export {
-  gainNewAccessToken
-}
+    gainNewAccessToken
+};
