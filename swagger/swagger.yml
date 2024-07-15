@@ -1,0 +1,326 @@
+openapi: 3.0.0
+info:
+  title: Twiker API
+  description: Get, write, and delete posts from users
+  version: 0.0.1
+servers:
+  - url: http://localhost:10000
+    description: The main page
+paths:
+  "/api/posts":
+    get:
+      security:
+        - accessAuth: []
+      description: Get the user posts
+      parameters: 
+        - $ref: '#/components/parameters/HeaderUserId'
+        - $ref: '#/components/parameters/HeaderUsername'
+      responses:
+        '200':
+          description: An array containing userpost objects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getPost'
+    post:
+      security:
+        - accessAuth: []
+      description: Write the user posts
+      parameters: 
+        - $ref: '#/components/parameters/HeaderUserId'
+        - $ref: '#/components/parameters/HeaderUsername'
+      requestBody:
+        description: User posts
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postContent'
+      responses:
+        '200':
+          description: Return postId and createdAt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/writePostReturn'
+  
+  "/api/posts/like":
+    put:
+      security:
+        - accessAuth: []
+      description: Users update the numbers of like
+      parameters: 
+        - $ref: '#/components/parameters/HeaderUsername'
+      requestBody:
+        description: Request contains postId
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/postIdRequest'
+      responses:
+        '200':
+          description: Response object containing value and timestamp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/likeOrRetweet'
+
+  "/api/posts/retweet":
+    put:
+      security:
+        - accessAuth: []
+      description: Users update the numbers of retweet
+      parameters: 
+        - $ref: '#/components/parameters/HeaderUsername'
+      requestBody:
+        description: Request contains postId
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/postIdRequest'
+      responses:
+        '200':
+          description: Response object containing value and timestamp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/likeOrRetweet'
+  
+  'api/posts/delete':
+    delete:
+      security:
+        - accessAuth: []
+      description: Delete userposts
+      parameters: 
+        - $ref: '#/components/parameters/HeaderUserId'
+      requestBody:
+        description: Request contains postId
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/postIdRequest'
+      # responses:
+      #   '200':
+      #     description: aaa
+      #     content:
+      #       application/json:
+      #         schema:
+      #           $ref: '#/components/schemas/'
+  
+
+  "/login":
+    get:
+      description: The login page
+      responses:
+        '200':
+          description: Render the login page
+          content: 
+            text/html: 
+              schema:
+                type: string
+    post:
+      description: Users login accounts
+      requestBody:
+        description: Users login information
+        required: true
+        content:
+          multipart/form-data:
+           schema:
+             $ref: '#/components/schemas/loginInfo'
+      responses:
+        '200':
+          description: Return the cookies with tokens
+          headers:
+            Set-Cookie:
+              schema: 
+                type: string
+                example: jwt=abcde12345; Path=/; HttpOnly, access=abcde12345; Path=/api/posts; HttpOnly
+        '400':
+          description: Fields have invalid values
+        '401':
+          description: Username or password incorrect
+        '5XX':
+          description: Users login error
+          
+  "/logout":
+    get:
+      security:
+        - cookieAuth: []
+      description: Users logout
+      responses:
+        '200':
+          description: Users logout successfully
+        '401':
+          description: Users have no jwt cookie
+          
+  "/refresh":
+    get:
+      security:
+        - cookieAuth: []
+      description: Get the new access token
+      responses:
+        '200':
+          description: Get the token successfully
+          headers:
+            Set-Cookie:
+              schema: 
+                type: string
+                example: access=abcde12345; Path=/api/posts; HttpOnly
+        '401':
+          description: Users have no jwt cookie
+        '403':
+          description: Failed to authenticate the users
+
+  "/register":
+    get:
+      description: The register page
+      responses:
+        '200':
+          description: Render the register page
+          content: 
+            text/html: 
+              schema:
+                type: string
+    post:
+      description: Users regist accounts
+      requestBody:
+        description: Users regist
+        required: true
+        content:
+          multipart/form-data:
+           schema:
+             $ref: '#/components/schemas/registInfo'
+      responses:
+        '200':
+          description: Register successfully
+        '400':
+          description: Fields have invalid values
+        '409':
+          description: Username or password is already in use
+        '5XX':
+          description: Users register error
+
+  "/":
+    get:
+      security:
+        - cookieAuth: []
+      description: The main page
+      responses:
+        '200':
+          description: Render the main page
+          content: 
+            text/html: 
+              schema:
+                type: string
+
+
+components:
+  parameters:
+    HeaderUserId:
+        in: header
+        name: userId
+        schema:
+          type: string
+        required: true 
+    HeaderUsername:
+        in: header
+        name: username
+        schema:
+          type: string
+        required: true 
+  
+  securitySchemes:
+    cookieAuth:         
+      type: apiKey
+      in: cookie
+      name: jwt
+    
+    accessAuth:
+      type: apiKey
+      in: cookie
+      name: access
+  
+  schemas:
+    loginInfo:
+      type: object
+      properties:
+        logUsername:
+          type: string
+        logPassword:
+          type: string
+    
+    registInfo:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+    
+    getPost:
+      type: object
+      properties:
+        userPosts:
+          type: array
+          item:
+            type: object
+            properties:
+              postId: 
+                type: string
+              content: 
+                type: string
+              createdAt: 
+                type: string
+              likeNum: 
+                type: integer
+              retweetNum: 
+                type: integer
+              selfLike: 
+                type: integer
+              selfRetweet: 
+                type: integer
+              postby: 
+                type: string
+              firstname: 
+                type: string
+              lastname: 
+                type: string
+              profilepic: 
+                type: string
+
+    postContent:
+      type: object
+      properties:
+        content:
+          type: string
+
+    writePostReturn:
+      type: object
+      properties:
+        postId:
+          type: string
+        createdAt:
+          type: string
+    
+    postIdRequest:
+      type: object
+      properties:
+        postId:
+          type: string
+    
+    likeOrRetweet:
+      type: object
+      properties:
+        value:
+          type: number
+        timestamp:
+          type: string
