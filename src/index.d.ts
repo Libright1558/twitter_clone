@@ -2,15 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import { JwtPayload } from 'jwt';
 import { QueryResult } from 'pg';
 
-type ExpressReq = Request;
-type ExpressRes = Response;
-type ExpressNext = NextFunction;
-
-interface ReqValue extends ExpressReq {
-    userId: string;
-    username: string;
-}
-
 type FetchListArray = Array<0 | 1>
 
 interface DecodedValue extends JwtPayload {
@@ -73,10 +64,9 @@ interface PostData {
 type PostDataArray = Array<PostData>
 
 export {
-    ExpressReq,
-    ReqValue,
-    ExpressRes,
-    ExpressNext,
+    Request,
+    Response,
+    NextFunction,
     FetchListArray,
     DecodedValue,
     PersonalDetail,
