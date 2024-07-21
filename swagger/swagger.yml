@@ -22,6 +22,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/getPost'
+        '5XX':
+          description: Get the user posts error
+
+
     post:
       security:
         - accessAuth: []
@@ -43,12 +47,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/writePostReturn'
+        '5XX':
+          description: User posts error
+  
   
   "/api/posts/like":
     put:
       security:
         - accessAuth: []
-      description: Users update the numbers of like
+      description: Users update the number of like
       parameters: 
         - $ref: '#/components/parameters/HeaderUsername'
       requestBody:
@@ -65,12 +72,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/likeOrRetweet'
+        '5XX':
+          description: Update number of like error
+
 
   "/api/posts/retweet":
     put:
       security:
         - accessAuth: []
-      description: Users update the numbers of retweet
+      description: Users update the number of retweet
       parameters: 
         - $ref: '#/components/parameters/HeaderUsername'
       requestBody:
@@ -87,6 +97,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/likeOrRetweet'
+        '5XX':
+          description: Update number of retweet error
+
   
   'api/posts/delete':
     delete:
@@ -102,13 +115,11 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/postIdRequest'
-      # responses:
-      #   '200':
-      #     description: aaa
-      #     content:
-      #       application/json:
-      #         schema:
-      #           $ref: '#/components/schemas/'
+      responses:
+        '200':
+          description: Delete posts succeed
+        '5XX':
+          description: Delete posts error
   
 
   "/login":
@@ -121,6 +132,10 @@ paths:
             text/html: 
               schema:
                 type: string
+        '5XX':
+          description: Render the login page error
+  
+
     post:
       description: Users login accounts
       requestBody:
@@ -144,6 +159,7 @@ paths:
           description: Username or password incorrect
         '5XX':
           description: Users login error
+
           
   "/logout":
     get:
@@ -155,6 +171,7 @@ paths:
           description: Users logout successfully
         '401':
           description: Users have no jwt cookie
+
           
   "/refresh":
     get:
@@ -184,6 +201,9 @@ paths:
             text/html: 
               schema:
                 type: string
+        '5XX':
+          description: Render the register page error
+  
     post:
       description: Users regist accounts
       requestBody:
@@ -215,6 +235,8 @@ paths:
             text/html: 
               schema:
                 type: string
+        '5XX':
+          description: Load main page error
 
 
 components:
