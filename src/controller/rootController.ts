@@ -2,11 +2,11 @@ import { setUserExpNX } from '../redis/cache.js';
 import { fetchPersonalData } from '../redis/get.js';
 import { writePersonalData } from '../redis/write.js';
 import { userInfo } from './databaseController/get.js';
-import { ReqValue, ExpressRes, PersonalDetail } from '..';
+import { Request, Response, PersonalDetail } from '..';
 
-const intoTheHomePage = async (req: ReqValue, res: ExpressRes) => {
+const intoTheHomePage = async (req: Request, res: Response) => {
     try {
-        const userId = req.userId;
+        const userId = req.headers['userId'] as string;
         let personalData = await fetchPersonalData(userId) as PersonalDetail;
 
         if (!personalData || !personalData.username) {
@@ -27,6 +27,7 @@ const intoTheHomePage = async (req: ReqValue, res: ExpressRes) => {
         res.status(200).render('home', payload);
     } catch (err) {
         console.log('intoTheHomePage error', err);
+        return res.sendStatus(500);
     }
 };
 
