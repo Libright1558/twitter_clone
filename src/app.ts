@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import 'dotenv/config';
 import verifyJWT from './middleware/verifyJWT.js';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 
 // Routes
 import loginRoute from './routes/loginRoutes.js';
@@ -27,6 +28,13 @@ app.set('views', 'views');
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(join(__dirname, 'public')));
 app.use(cookieParser());
+
+const corsOptions = {
+    origin: process.env.swagger_host,
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 
 app.use('/login', loginRoute);
 app.use('/register', registerRoute);
