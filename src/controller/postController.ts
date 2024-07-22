@@ -1,6 +1,6 @@
 import express from 'express';
 import moment from 'moment';
-import { ReqValue, ExpressRes, FetchListArray, PostArrayNest, QueryResult, getPostArrayType } from '..';
+import { Request, Response, FetchListArray, PostArrayNest, QueryResult, getPostArrayType } from '..';
 import { selfLikeReturnType, selfRetweetReturnType } from '.';
 import { setPostExpNX, delKey } from '../redis/cache.js';
 import { getPosts, fetchPostIdArray } from '../redis/get.js';
@@ -15,10 +15,10 @@ const app = express();
 
 app.use(express.urlencoded({ extended: false }));
 
-const getPost = async (req: ReqValue, res: ExpressRes) => {
+const getPost = async (req: Request, res: Response) => {
     try {
-        const username = req.username;
-        const userId = req.userId;
+        const username = req.headers['username'] as string;
+        const userId = req.headers['userId'] as string;
 
         const postIdArray = await fetchPostIdArray(userId);
         const post = await getPosts(userId, postIdArray?.length !== 0 ? postIdArray : ['null']) as getPostArrayType;
@@ -175,14 +175,15 @@ const getPost = async (req: ReqValue, res: ExpressRes) => {
         res.status(200).send(JSON.stringify(obj));
     } catch (err) {
         console.log('posts.js router.get error', err);
+        return res.sendStatus(500);
     }
 };
 
-const writePost = async (req: ReqValue, res: ExpressRes) => {
+const writePost = async (req: Request, res: Response) => {
     try {
         const postData = req.body;
-        const userId = req.userId;
-        postData.postby = req.username;
+        const userId = req.headers['userId'] as string;
+        postData.postby = req.headers['username'] as string;
         const result = await insertPost(postData) as any; // result = [ [ { postId, createdAt } ], metadata ]
         const returnedValue = result[0][0]; // { postId, createdAt }
         returnedValue.createdAt = moment(returnedValue.createdAt).format('YYYY-MM-DD HH:mm:ss');
@@ -192,13 +193,14 @@ const writePost = async (req: ReqValue, res: ExpressRes) => {
         res.status(200).send(JSON.stringify(returnedValue));
     } catch (error) {
         console.log('writePost error', error);
+        return res.sendStatus(500);
     }
 };
 
-const updateLike = async (req: ReqValue, res: ExpressRes) => {
+const updateLike = async (req: Request, res: Response) => {
     try {
         const postId = req.body?.postId;
-        const username = req.username;
+        const username = req.headers['username'] as string;
 
         const param = {
             postId,
@@ -225,13 +227,14 @@ const updateLike = async (req: ReqValue, res: ExpressRes) => {
         res.status(200).send(JSON.stringify(likeNum));
     } catch (error) {
         console.log('updateLike error', error);
+        return res.sendStatus(500);
     }
 };
 
-const updateRetweet = async (req: ReqValue, res: ExpressRes) => {
+const updateRetweet = async (req: Request, res: Response) => {
     try {
         const postId = req.body?.postId;
-        const username = req.username;
+        const username = req.headers['username'] as string;
 
         const param = {
             postId,
@@ -259,13 +262,14 @@ const updateRetweet = async (req: ReqValue, res: ExpressRes) => {
         res.status(200).send(JSON.stringify(retweetNum));
     } catch (error) {
         console.log('updateRetweet error', error);
+        return res.sendStatus(500);
     }
 };
 
-const deletePost = (req: ReqValue) => {
+const deletePost = (req: Request, res: Response) => {
     try {
         const postId = req.body?.postId;
-        const userId = req.userId;
+        const userId = req.headers['userId'] as string;
 
         const promise = [
             removePost(postId),
@@ -273,8 +277,10 @@ const deletePost = (req: ReqValue) => {
         ];
 
         Promise.allSettled(promise);
+        return res.sendStatus(200);
     } catch (error) {
         console.log('deletePost error', error);
+        return res.sendStatus(500);
     }
 };
 
