@@ -2,16 +2,22 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import { findDup, initRegist } from './databaseController/regist.js';
 import { FindDupType } from '.';
-import { ExpressReq, ExpressRes } from '..';
+import { Request, Response } from '..';
 const app = express();
 
 app.use(express.urlencoded({ extended: false }));
 
-const renderRegister = (req: ExpressReq, res: ExpressRes) => {
-    res.status(200).render('register');
+const renderRegister = (req: Request, res: Response) => {
+    try {
+        return res.status(200).render('register');
+    } catch (e) {
+        console.log('renderRegister error: ', e);
+        return res.sendStatus(500);
+    }
+    
 };
 
-const registAccount = async (req: ExpressReq, res: ExpressRes) => {
+const registAccount = async (req: Request, res: Response) => {
     const firstName = req.body.firstName.trim();
     const lastName = req.body.lastName.trim();
     const username = req.body.username.trim();
@@ -29,8 +35,8 @@ const registAccount = async (req: ExpressReq, res: ExpressRes) => {
             user = await findDup(param) as FindDupType[] | undefined;
         } catch (e) {
             console.log(e);
-            payload.errorMessage = 'Something went worng.';
-            res.status(200).render('register', payload);
+            payload.errorMessage = 'registAccount error.';
+            res.status(500).render('register', payload);
         }
 
         if (user && user[0] == null) {
@@ -41,11 +47,11 @@ const registAccount = async (req: ExpressReq, res: ExpressRes) => {
                 const userData = [firstName, lastName, username, email, password, defaultProfile];
                 await initRegist(userData);// Writing user's data into the database.
 
-                return res.redirect('/login');
+                return res.redirect(200, '/login');
             } catch (e) {
                 console.log(e);
-                payload.errorMessage = 'Something went worng.';
-                res.status(200).render('register', payload);
+                payload.errorMessage = 'registAccount error.';
+                res.status(500).render('register', payload);
             }
         } else {
             // User found
@@ -54,11 +60,11 @@ const registAccount = async (req: ExpressReq, res: ExpressRes) => {
             } else {
                 payload.errorMessage = 'username already in use.';
             }
-            res.status(200).render('register', payload);
+            res.status(409).render('register', payload);
         }
     } else {
         payload.errorMessage = 'Make sure each field has a valid value.';
-        res.status(200).render('register', payload);
+        res.status(400).render('register', payload);
     }
 };
 
