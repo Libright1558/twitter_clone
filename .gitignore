@@ -5,3 +5,4 @@ node_modules/*
 dump.rdb
 redis/dump.rdb
 test/*
+/**/*.js
