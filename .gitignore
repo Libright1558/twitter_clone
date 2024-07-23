@@ -1,8 +1,7 @@
 node_modules/*
 .env
 .vscode/*
-.DS_Store
-dump.rdb
-redis/dump.rdb
+/**/.DS_Store
+/**/dump.rdb
 test/*
 /**/*.js
