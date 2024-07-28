@@ -10,7 +10,7 @@ paths:
   "/api/posts":
     get:
       security:
-        - accessAuth: []
+        - bearerAuth: []
       description: Get the user posts
       parameters: 
         - $ref: '#/components/parameters/HeaderUserId'
@@ -28,7 +28,7 @@ paths:
 
     post:
       security:
-        - accessAuth: []
+        - bearerAuth: []
       description: Write the user posts
       parameters: 
         - $ref: '#/components/parameters/HeaderUserId'
@@ -54,7 +54,7 @@ paths:
   "/api/posts/like":
     put:
       security:
-        - accessAuth: []
+        - bearerAuth: []
       description: Users update the number of like
       parameters: 
         - $ref: '#/components/parameters/HeaderUsername'
@@ -79,7 +79,7 @@ paths:
   "/api/posts/retweet":
     put:
       security:
-        - accessAuth: []
+        - bearerAuth: []
       description: Users update the number of retweet
       parameters: 
         - $ref: '#/components/parameters/HeaderUsername'
@@ -104,7 +104,7 @@ paths:
   '/api/posts/delete':
     delete:
       security:
-        - accessAuth: []
+        - bearerAuth: []
       description: Delete userposts
       parameters: 
         - $ref: '#/components/parameters/HeaderUserId'
@@ -123,36 +123,18 @@ paths:
   
 
   "/login":
-    get:
-      description: The login page
-      responses:
-        '200':
-          description: Render the login page
-          content: 
-            text/html: 
-              schema:
-                type: string
-        '5XX':
-          description: Render the login page error
-  
-
     post:
       description: Users login accounts
       requestBody:
         description: Users login information
         required: true
         content:
-          application/x-www-form-urlencoded:
+          application/json:
            schema:
              $ref: '#/components/schemas/loginInfo'
       responses:
         '200':
           description: Return the cookies with tokens
-          headers:
-            Set-Cookie:
-              schema: 
-                type: string
-                example: jwt=abcde12345; Path=/; HttpOnly, access=abcde12345; Path=/api/posts; HttpOnly
         '400':
           description: Fields have invalid values
         '401':
@@ -161,56 +143,28 @@ paths:
           description: Users login error
 
           
-  "/logout":
-    get:
-      security:
-        - cookieAuth: []
-      description: Users logout
-      responses:
-        '200':
-          description: Users logout successfully
-        '401':
-          description: Users have no jwt cookie
-
-          
   "/refresh":
     get:
       security:
-        - cookieAuth: []
+        - bearerAuth: []
       description: Get the new access token
       responses:
         '200':
           description: Get the token successfully
-          headers:
-            Set-Cookie:
-              schema: 
-                type: string
-                example: access=abcde12345; Path=/api/posts; HttpOnly
         '401':
-          description: Users have no jwt cookie
+          description: Users have no jwt token
         '403':
           description: Failed to authenticate the users
 
+
   "/register":
-    get:
-      description: The register page
-      responses:
-        '200':
-          description: Render the register page
-          content: 
-            text/html: 
-              schema:
-                type: string
-        '5XX':
-          description: Render the register page error
-  
     post:
       description: Users regist accounts
       requestBody:
         description: Users regist
         required: true
         content:
-          application/x-www-form-urlencoded:
+          application/json:
            schema:
              $ref: '#/components/schemas/registInfo'
       responses:
@@ -223,20 +177,21 @@ paths:
         '5XX':
           description: Users register error
 
-  "/":
+
+  "/user":
     get:
       security:
-        - cookieAuth: []
+        - bearerAuth: []
       description: The main page
       responses:
         '200':
-          description: Render the main page
+          description: Return user data
           content: 
-            text/html: 
+            application/json: 
               schema:
-                type: string
+                $ref: '#/components/schemas/userData'
         '5XX':
-          description: Load main page error
+          description: Return user data error
 
 
 components:
@@ -255,15 +210,10 @@ components:
         required: true 
   
   securitySchemes:
-    cookieAuth:         
+    bearerAuth:         
       type: apiKey
-      in: cookie
-      name: jwt
-    
-    accessAuth:
-      type: apiKey
-      in: cookie
-      name: access
+      name: Authorization
+      in: header
   
   schemas:
     loginInfo:
@@ -286,6 +236,20 @@ components:
         email:
           type: string
         password:
+          type: string
+      
+    userData:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        profilepic:
           type: string
     
     getPost:
