@@ -4,9 +4,10 @@ import 'dotenv/config';
 import { Request, Response, DecodedValue } from '..';
 
 const handleRefreshToken = async (req: Request, res: Response) => {
-    const cookies = req.cookies;
-    if (!cookies?.jwt) return res.sendStatus(401);
-    const refreshToken = cookies.jwt;
+    const bearerHeader = req.headers['Authorization'] as string;
+    const token = bearerHeader?.split(' ');
+    if (!token) return res.sendStatus(401);
+    const refreshToken = token[1];
 
     const pubkey = fs.readFileSync(`${process.env.public_key}`, 'utf8');
     jwt.verify(refreshToken, pubkey, { algorithms: ['RS256'] }, (err, decoded: DecodedValue) => {
@@ -21,7 +22,7 @@ const handleRefreshToken = async (req: Request, res: Response) => {
                 prikey,
                 { algorithm: 'RS256', expiresIn: '60s' }
             );
-            res.cookie('access', accessToken, { httpOnly: true, sameSite: true, maxAge: 2 * 60 * 1000 });
+            res.set('Authorization', `Bearer ${accessToken}`);
         }
         
         return res.status(200).end();
