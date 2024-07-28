@@ -7,9 +7,8 @@ import cors from 'cors';
 // Routes
 import loginRoute from './routes/loginRoutes.js';
 import registerRoute from './routes/registerRoutes.js';
-import logoutRoute from './routes/logoutRoutes.js';
 import refreshRoute from './routes/refreshTokenRoutes.js';
-import root from './routes/root.js';
+import userRoute from './routes/userRoutes.js';
 
 import postsApiRoute from './routes/api/posts.js'; // API Routes
 
@@ -30,9 +29,9 @@ app.use(cors(corsOptions));
 
 app.use('/login', loginRoute);
 app.use('/register', registerRoute);
-app.use('/logout', logoutRoute);
 app.use('/refresh', refreshRoute);
-app.use('/', root);
+
 
 app.use(verifyJWT);
+app.use('/user', userRoute);
 app.use('/api/posts', postsApiRoute);
