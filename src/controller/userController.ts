@@ -19,11 +19,7 @@ const intoTheHomePage = async (req: Request, res: Response) => {
             await setUserExpNX(900);
         }
 
-        const payload = {
-            personalData
-        };
-        
-        res.status(200).send(JSON.stringify(payload));
+        res.status(200).send(JSON.stringify(personalData));
     } catch (err) {
         console.log('intoTheHomePage error', err);
         return res.sendStatus(500);
