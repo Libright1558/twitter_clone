@@ -20,11 +20,10 @@ const intoTheHomePage = async (req: Request, res: Response) => {
         }
 
         const payload = {
-            pageTitle: 'Home',
-            UserloggedIn: personalData,
-            UserloggedInJs: JSON.stringify(personalData)
+            personalData
         };
-        res.status(200).render('home', payload);
+        
+        res.status(200).send(JSON.stringify(payload));
     } catch (err) {
         console.log('intoTheHomePage error', err);
         return res.sendStatus(500);
