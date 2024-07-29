@@ -4,7 +4,7 @@ import fs from 'fs';
 import { Request, Response, NextFunction, DecodedValue } from '..';
 
 const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
-    const bearerHeader = req.headers['Authorization'] as string;
+    const bearerHeader = req.get('Authorization') as string;
     const token = bearerHeader?.split(' ');
     if (!token) return res.sendStatus(401);
     const accessToken = token[1];
