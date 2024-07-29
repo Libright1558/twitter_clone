@@ -134,7 +134,7 @@ paths:
              $ref: '#/components/schemas/loginInfo'
       responses:
         '200':
-          description: Return the cookies with tokens
+          description: Return the header with auth
         '400':
           description: Fields have invalid values
         '401':
