@@ -2,11 +2,11 @@
   "name": "twitter_clone",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/app.js",
+  "main": "dest/app.js",
   "scripts": {
     "test": "jest",
-    "start": "node dist/app.js",
-    "swagger": "node dist/swagger/swaggerStart.js"
+    "start": "node dest/app.js",
+    "swagger": "node dest/swagger/swaggerStart.js"
   },
   "author": "Libright1558 <n32717325@gmail.com>",
   "license": "ISC",
