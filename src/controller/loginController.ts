@@ -13,15 +13,16 @@ app.use(express.urlencoded({ extended: false }));
 
 const userLogin = async (req: Request, res: Response) => {
     try {
-        if (!req.body.logUsername || !req.body.logPassword) {
+        const userLoginInfo = req.body;
+        if (!userLoginInfo.logUsername || !userLoginInfo.logPassword) {
             return res.sendStatus(400);
         }
 
-        const user = await findOne(req.body.logUsername) as FindOneType[] | undefined;
+        const user = await findOne(userLoginInfo.logUsername) as FindOneType[] | undefined;
 
         if (user && user[0]) {
             
-            const result = await bcrypt.compare(req.body.logPassword, user[0].password);
+            const result = await bcrypt.compare(userLoginInfo.logPassword, user[0].password);
     
             if (result === true) {
 
