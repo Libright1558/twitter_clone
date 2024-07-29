@@ -4,7 +4,7 @@ import 'dotenv/config';
 import { Request, Response, DecodedValue } from '..';
 
 const handleRefreshToken = async (req: Request, res: Response) => {
-    const bearerHeader = req.headers['Authorization'] as string;
+    const bearerHeader = req.get('Authorization') as string;
     const token = bearerHeader?.split(' ');
     if (!token) return res.sendStatus(401);
     const refreshToken = token[1];
@@ -20,7 +20,7 @@ const handleRefreshToken = async (req: Request, res: Response) => {
             const accessToken = jwt.sign(
                 { userId, username },
                 prikey,
-                { algorithm: 'RS256', expiresIn: '60s' }
+                { algorithm: 'RS256', expiresIn: '10m' }
             );
             res.set('Authorization', `Bearer ${accessToken}`);
         }
