@@ -3,7 +3,7 @@ import postController from '../../controller/postController.js';
 const router = express.Router();
 
 router.route('/')
-    .get(express.json(), postController.getPost)
+    .get(postController.getPost)
     .post(express.json(), postController.writePost);
 
 router.put('/like', express.json(), postController.updateLike);
