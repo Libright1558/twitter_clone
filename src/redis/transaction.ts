@@ -165,7 +165,7 @@ const renewLikeNums = async (client: RedisClientType, postId: string, obj: Renew
         .multi()
         .SET(postId + 'postLikeNums', obj.timestamp, { NX: true })
         .expire(postId + 'postLikeNums', expTime)
-        .HSETNX('retweetNums', postId, obj.value)
+        .HSETNX('likeNums', postId, obj.value)
         .exec();
 
     await client.WATCH(postId + 'postLikeNums');
